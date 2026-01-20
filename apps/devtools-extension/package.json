@@ -1,0 +1,42 @@
+{
+	"name": "react-canvas-fiber-devtools",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "plasmo dev",
+		"build": "plasmo build",
+		"clean": "rimraf .plasmo build"
+	},
+	"manifest": {
+		"name": "Canvas Renderer DevTools",
+		"description": "DevTools panel for react-canvas-fiber",
+		"version": "0.0.0",
+		"web_accessible_resources": [
+			{
+				"matches": [
+					"<all_urls>"
+				],
+				"resources": [
+					"__plasmo_hmr_proxy__",
+					"devtools.html",
+					"devtools*.js",
+					"react-canvas-fiber*.html",
+					"react-canvas-fiber*.js"
+				]
+			}
+		]
+	},
+	"dependencies": {
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0"
+	},
+	"devDependencies": {
+		"@types/chrome": "^0.0.278",
+		"@types/react": "^18.2.48",
+		"@types/react-dom": "^18.2.18",
+		"plasmo": "latest",
+		"rimraf": "^6.0.1",
+		"typescript": "^5.5.4"
+	}
+}
