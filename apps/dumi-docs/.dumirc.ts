@@ -1,14 +1,13 @@
 import { defineConfig } from 'dumi'
 
+const pathPreFix = 'react-canvas-fiber-dumi-pages'
 export default defineConfig({
 	title: 'Canvas Renderer',
-	// logo: '/custom-react-render-canvas-dumi-pages/logo.svg',
-	// base: '/custom-react-render-canvas-dumi-pages/', // ✅ 关键：这里填你的仓库名
-	// publicPath: '/custom-react-render-canvas-dumi-pages/', // ⚠️ 确保静态资源路径正确
-	// favicons: ['/custom-react-render-canvas-dumi-pages/logo.svg'],
-	logo: '/logo.svg',
-	favicons: ['/logo.svg'],
-	outputPath: 'dist',
+	logo: `/${pathPreFix}/logo.svg`,
+	base: `/${pathPreFix}/`,
+	publicPath: `/${pathPreFix}/`,
+	favicons: [`/${pathPreFix}/logo.svg`],
+	outputPath: `dist`,
 	// ① 启用 antd 主题
 	theme: {
 		'@dumi-theme-antd': {},
