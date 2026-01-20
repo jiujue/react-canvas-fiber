@@ -1,0 +1,39 @@
+{
+	"name": "react-canvas-fiber",
+	"version": "0.0.0",
+	"private": false,
+	"type": "module",
+	"sideEffects": false,
+	"files": [
+		"dist"
+	],
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		}
+	},
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"clean": "rimraf dist"
+	},
+	"peerDependencies": {
+		"react": ">=18"
+	},
+	"dependencies": {
+		"react-reconciler": "^0.29.0",
+		"yoga-layout": "^3.2.1"
+	},
+	"devDependencies": {
+		"@types/react": "^18.2.48",
+		"@types/react-reconciler": "^0.28.9",
+		"rimraf": "^6.0.1",
+		"tsup": "^8.3.5",
+		"typescript": "^5.5.4"
+	}
+}

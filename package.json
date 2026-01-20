@@ -1,0 +1,62 @@
+{
+	"name": "react-canvas-fiber",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "pnpm -C apps/demo dev",
+		"build": "pnpm -r build",
+		"preview": "pnpm -C apps/demo preview",
+		"clean": "pnpm -r clean",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier . --write",
+		"format:check": "prettier . --check",
+		"commit": "cz",
+		"commitlint": "commitlint --edit",
+		"prepare": "husky",
+		"changeset": "changeset",
+		"version-packages": "changeset version && pnpm install --no-frozen-lockfile",
+		"release": "pnpm build && changeset publish"
+	},
+	"lint-staged": {
+		"*.{js,jsx,ts,tsx}": [
+			"eslint --fix"
+		],
+		"*.{json,md,mdx,yml,yaml,css,scss,less,html}": [
+			"prettier --write"
+		]
+	},
+	"config": {
+		"commitizen": {
+			"path": "cz-git"
+		}
+	},
+	"devDependencies": {
+		"@changesets/cli": "^2.29.8",
+		"@commitlint/cli": "^19.8.0",
+		"@commitlint/config-conventional": "^19.8.0",
+		"@typescript-eslint/eslint-plugin": "^8.19.0",
+		"@typescript-eslint/parser": "^8.19.0",
+		"commitizen": "^4.3.1",
+		"cz-git": "^1.11.0",
+		"eslint": "^8.57.0",
+		"eslint-config-prettier": "^9.1.0",
+		"eslint-plugin-react": "^7.37.4",
+		"eslint-plugin-react-hooks": "^5.1.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.5.0",
+		"prettier": "^3.4.2",
+		"typescript": "^5.5.4"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@parcel/watcher",
+			"@swc/core",
+			"core-js",
+			"core-js-pure",
+			"esbuild",
+			"less"
+		]
+	}
+}

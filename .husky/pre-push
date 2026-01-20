@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Git pre-push hook：推送前检查 changeset 状态
+pnpm changeset status

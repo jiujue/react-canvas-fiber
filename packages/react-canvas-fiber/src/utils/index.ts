@@ -1,0 +1,1 @@
+export { normalizeInsets } from './style'

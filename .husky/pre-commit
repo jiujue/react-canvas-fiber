@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Git pre-commit hook：对暂存区文件执行 lint-staged
+pnpm lint-staged

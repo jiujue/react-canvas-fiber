@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Git commit-msg hook：校验提交信息是否符合约定式提交
+pnpm commitlint --edit "$1"
