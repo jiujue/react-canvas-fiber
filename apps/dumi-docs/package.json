@@ -1,0 +1,26 @@
+{
+	"name": "react-canvas-fiber-docs",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"predev": "pnpm -C ../../packages/react-canvas-fiber build",
+		"dev": "dumi dev",
+		"prebuild": "pnpm -C ../../packages/react-canvas-fiber build",
+		"build": "dumi build",
+		"preview": "dumi preview",
+		"clean": "rimraf dist .dumi/tmp"
+	},
+	"dependencies": {
+		"react-canvas-fiber": "workspace:*",
+		"antd": "^6.2.0",
+		"dumi-theme-antd": "^0.4.4",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0"
+	},
+	"devDependencies": {
+		"dumi": "^2.4.21",
+		"rimraf": "^6.0.1",
+		"typescript": "^5.5.4"
+	}
+}
