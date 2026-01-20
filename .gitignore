@@ -26,7 +26,6 @@ dist-ssr
 # dumi
 **/.dumi/tmp/
 **/.dumi/tmp-production/
-**/.dumi/
 
 apps/devtools-extension/.plasmo/
 apps/devtools-extension/build/

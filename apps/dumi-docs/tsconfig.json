@@ -3,5 +3,5 @@
 	"compilerOptions": {
 		"noEmit": true
 	},
-	"include": ["docs", "src", ".dumirc.ts"]
+	"include": ["docs", "src", ".dumirc.ts", ".dumi/pages"]
 }

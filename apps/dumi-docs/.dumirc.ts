@@ -7,6 +7,7 @@ export default defineConfig({
 	base: `/${pathPreFix}/`,
 	publicPath: `/${pathPreFix}/`,
 	favicons: [`/${pathPreFix}/logo.svg`],
+
 	outputPath: `dist`,
 	// ① 启用 antd 主题
 	theme: {
@@ -19,6 +20,7 @@ export default defineConfig({
 	// ③ 组件解析（你是组件库，一定要有）
 	resolve: {
 		atomDirs: [{ type: 'component', dir: 'src' }],
+		entryFile: 'src/pages/index.tsx', // 指定首页入口
 	},
 
 	// ④ antd v5 样式（否则会看起来“怪”）
@@ -33,10 +35,11 @@ export default defineConfig({
 		name: 'react-canvas-fiber',
 		nav: [
 			{ title: '指南', link: '/guide/getting-started' },
-			{ title: '组件', link: '/components/canvas' },
-			{ title: '类型', link: '/types' },
-			{ title: '受控实例', link: '/controlled-demo/width' },
 			{ title: '调研', link: '/research/overview' },
+			{ title: '组件', link: '/components/canvas' },
+			{ title: '受控实例', link: '/controlled-demo/width' },
+			{ title: '复杂示例', link: '/complex-example/tree-select' },
+			{ title: '类型', link: '/types' },
 		],
 
 		sidebar: {
@@ -74,6 +77,12 @@ export default defineConfig({
 					],
 				},
 			],
+			'/complex-example': [
+				{
+					title: '复杂示例',
+					children: [{ title: 'Tree Select', link: '/complex-example/tree-select' }],
+				},
+			],
 			'/types': [
 				{
 					title: '类型',
@@ -87,5 +96,6 @@ export default defineConfig({
 				},
 			],
 		},
+		footer: 'Copyright © 2026 | Powered by jiujue',
 	},
 })
