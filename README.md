@@ -1,37 +1,59 @@
 # react-canvas-fiber
 
-参考 react-three-fiber 的思路实现一个 Canvas 自定义 React Renderer：用 JSX 声明图元树，React 负责 diff，renderer 维护 scene graph，并在每次提交后执行 `layout -> draw` 渲染到 `<canvas>`。
+[中文版](./docs/README.zh.md)
 
-## 目录结构
+An experiment inspired by react-three-fiber: implement a custom React Renderer for `<canvas>`. Use JSX to declare a primitive tree, let React handle diffing, let the renderer maintain a scene graph, and run `layout -> draw` after each commit to render onto `<canvas>`.
 
-- 核心库（可打包分发）：[packages/react-canvas-fiber](./packages/react-canvas-fiber)
-- Demo（Vite 应用）：[apps/demo](./apps/demo)
+## Monorepo Layout
 
-## 快速开始
+- Core library (publishable package): [packages/react-canvas-fiber](./packages/react-canvas-fiber)
+- Demo app (Vite + React): [apps/demo](./apps/demo)
+- Docs site (dumi): [apps/dumi-docs](./apps/dumi-docs)
+- DevTools extension (Chrome): [apps/devtools-extension](./apps/devtools-extension)
 
-前置：Node.js + pnpm
+## Documentation
+
+- Docs site source: [apps/dumi-docs/docs](./apps/dumi-docs/docs)
+- DevTools guide: [devtools.md](./apps/dumi-docs/docs/guide/devtools.md)
+- Architecture notes: [ARCHITECTURE.md](./docs/ARCHITECTURE.md) ([English](./docs/ARCHITECTURE.en.md))
+
+## Quick Start
+
+Prerequisites: Node.js + pnpm
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-构建全部工作区（核心库 + demo）：
+Build all workspaces (core library + demo):
 
 ```bash
 pnpm build
 ```
 
-## DevTools 面板
+Run docs site locally:
 
-提供一个 Chrome DevTools 面板用于查看场景树/节点高亮/属性检查：
+```bash
+pnpm -C apps/dumi-docs dev
+```
 
-- 文档：[apps/docs/docs/guide/devtools.md](./apps/docs/docs/guide/devtools.md)
-- 扩展工程：`apps/devtools-extension`
+## DevTools Panel
 
-## 使用核心库
+A Chrome DevTools panel is provided for inspecting the scene tree / node highlighting / props inspection:
 
-核心包名为 `react-canvas-fiber`，demo 里就是以工作区依赖的方式使用它：
+- Docs: [apps/dumi-docs/docs/guide/devtools.md](./apps/dumi-docs/docs/guide/devtools.md)
+- Extension project: `apps/devtools-extension`
+
+## Using the Core Library
+
+The core package name is `react-canvas-fiber`. The demo consumes it via a workspace dependency:
+
+Install from npm (once published):
+
+```bash
+pnpm add react-canvas-fiber
+```
 
 ```tsx
 import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
@@ -52,9 +74,11 @@ export function Example() {
 }
 ```
 
-## 架构概览
+## Architecture Overview
 
-### 渲染管线
+[Architecture Overview](./docs/ARCHITECTURE.md)
+
+### Render Pipeline
 
 ```mermaid
 graph LR
@@ -65,20 +89,28 @@ graph LR
   E --> F[Draw Pass - Canvas2D]
 ```
 
-### 关键模块
+### Key Modules
 
-- 场景树与节点结构：`packages/react-canvas-fiber/src/nodes.ts`
-- reconciler HostConfig：`packages/react-canvas-fiber/src/reconciler.ts`
-- Yoga style 映射与 layout pass：`packages/react-canvas-fiber/src/layout.ts`
-- Canvas2D 绘制：`packages/react-canvas-fiber/src/draw.ts`
-- React DOM 桥接组件 `<Canvas/>`：`packages/react-canvas-fiber/src/Canvas.tsx`
+- Scene graph and node structure: `packages/react-canvas-fiber/src/runtime/nodes.ts`
+- Reconciler HostConfig: `packages/react-canvas-fiber/src/runtime/reconciler.ts`
+- Yoga style mapping and layout pass: `packages/react-canvas-fiber/src/layout/layoutTree.ts`
+- Canvas2D drawing: `packages/react-canvas-fiber/src/render/drawTree.ts`
+- React DOM bridge component `<Canvas/>`: `packages/react-canvas-fiber/src/components/Canvas.tsx`
 
-## 设计目标（第一版）
+## Design Goals (v1)
 
-- 支持 `View/Rect/Text` 这类 JSX 节点，React diff 后能触发重绘
-- 支持 Yoga Flexbox 子集布局：宽高、flexDirection、justifyContent、alignItems、padding/margin、position、gap
-- 使用 `requestAnimationFrame` 合帧：一次提交内多次更新只渲染一帧
+- Support JSX nodes like `View/Rect/Text`, and re-render after React diffs
+- Support a subset of Yoga Flexbox layout: width/height, flexDirection, justifyContent, alignItems, padding/margin, position, gap
+- Batch updates with `requestAnimationFrame`: multiple updates within one commit render only one frame
 
-## 说明
+## Notes
 
-- 当前实现是“最小可用骨架”，绘制能力与布局能力都是子集，便于后续扩展（例如 Group/Transform、更多图元、事件系统、useFrame 等）。
+- The current implementation is a “minimum viable skeleton”. Both drawing and layout are intentionally a subset, making it easier to extend later (e.g., Group/Transform, more primitives, event system, useFrame, etc.).
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## License
+
+MIT. See [LICENSE](./LICENSE).

@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
+		"prebuild": "pnpm -C ../../packages/react-canvas-fiber build",
 		"build": "tsc -b && vite build",
 		"preview": "vite preview",
 		"clean": "rimraf dist"

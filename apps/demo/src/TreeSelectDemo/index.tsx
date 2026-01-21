@@ -244,7 +244,7 @@ export default function TreeSelectDemo() {
 											{/* 展开/收起图标：阻止冒泡避免触发选中 */}
 											<Text
 												text={hasChildren ? (expanded ? '▾' : '▸') : '•'}
-												onClick={(e) => {
+												onClick={(e: any) => {
 													e.stopPropagation()
 													if (hasChildren) toggleExpanded(node.id)
 												}}

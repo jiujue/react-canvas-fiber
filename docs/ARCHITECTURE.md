@@ -29,7 +29,7 @@ graph TB
 
 ### Scene Graph
 
-- `packages/react-canvas-fiber/src/nodes.ts`
+- `packages/react-canvas-fiber/src/runtime/nodes.ts`
   - 定义节点类型：`View/Rect/Text` 以及容器 `Root`
   - 保存三类关键状态：
     - `props`：来自 JSX 的属性
@@ -38,7 +38,7 @@ graph TB
 
 ### Reconciler（React 提交阶段）
 
-- `packages/react-canvas-fiber/src/reconciler.ts`
+- `packages/react-canvas-fiber/src/runtime/reconciler.ts`
   - 使用 `react-reconciler` 的 Mutation 模式维护 `children` 数组
   - React 每次提交后触发 `invalidate()`，把布局与绘制合并到下一帧
 
@@ -50,7 +50,7 @@ graph TB
 
 ### Layout Pass（Yoga）
 
-- `packages/react-canvas-fiber/src/layout.ts`
+- `packages/react-canvas-fiber/src/layout/layoutTree.ts`
   - 通过 `yoga-layout/load` 异步加载 WASM
   - 将 `style` 子集映射为 Yoga API（width/height/flex/padding/margin/position/gap 等）
   - 对 `Text` 节点注入 `setMeasureFunc`，在 Yoga 询问尺寸时调用外部传入的 `measureText`
@@ -63,23 +63,23 @@ graph TB
 
 ### Draw Pass（Canvas2D）
 
-- `packages/react-canvas-fiber/src/draw.ts`
+- `packages/react-canvas-fiber/src/render/drawTree.ts`
   - 以 `layout` 为准计算每个节点的最终绘制矩形
   - 递归遍历子树，使用父节点偏移做坐标累加
   - 用 `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)` 支持高清渲染
 
 ## 运行时 Root（把三段串起来）
 
-- `packages/react-canvas-fiber/src/root.ts`
+- `packages/react-canvas-fiber/src/runtime/root.ts`
   - 维护 `dirty + requestAnimationFrame` 合帧逻辑
   - 每帧执行：`layoutTree -> drawTree`
   - `measureText` 用 `ctx.measureText` 做最小测量实现
 
 ## 对外 API
 
-- `packages/react-canvas-fiber/src/Canvas.tsx`
+- `packages/react-canvas-fiber/src/components/Canvas.tsx`
   - React DOM 组件：创建 `<canvas>` 并在 `useLayoutEffect` 中初始化/销毁 renderer root
-- `packages/react-canvas-fiber/src/jsx.ts`
+- `packages/react-canvas-fiber/src/jsx/index.ts`
   - `View/Rect/Text` 的 props 定义与 JSX 工厂（返回 intrinsic element）
 - `packages/react-canvas-fiber/src/intrinsics.d.ts`
   - 让 TS 在用户侧识别 `<View /> <Rect /> <Text />`

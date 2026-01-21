@@ -3,6 +3,8 @@
 	"version": "0.0.0",
 	"private": false,
 	"type": "module",
+	"license": "MIT",
+	"description": "A React custom renderer for Canvas2D with Yoga layout",
 	"sideEffects": false,
 	"files": [
 		"dist"

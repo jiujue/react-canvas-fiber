@@ -47,3 +47,11 @@ export function Example() {
 ## 实现说明
 
 详见 [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)。
+
+## 参与贡献
+
+见仓库根目录的 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
+
+## License
+
+MIT，见 [LICENSE](../../LICENSE)。

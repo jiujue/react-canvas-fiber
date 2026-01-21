@@ -85,12 +85,12 @@ export default function App() {
 							}}
 							borderRadius={12}
 							fill={dragging ? '#f59e0b' : '#ef4444'}
-							onPointerDown={(e) => {
+							onPointerDown={(e: any) => {
 								setDragging(true)
 								const rectAbs = getAbs(e.currentTarget)
 								setDragOffset({ x: e.x - rectAbs.x, y: e.y - rectAbs.y })
 							}}
-							onPointerMove={(e) => {
+							onPointerMove={(e: any) => {
 								if (!dragging) return
 								const parentAbs = getAbs(e.currentTarget.parent)
 								setDragX(e.x - dragOffset.x - parentAbs.x)

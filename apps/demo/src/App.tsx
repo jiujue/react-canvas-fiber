@@ -93,7 +93,7 @@ function ScrollDemo() {
 								scrollbarInset={6}
 								scrollbarTrackColor="rgba(255,255,255,0.14)"
 								scrollbarThumbColor="rgba(255,255,255,0.45)"
-								onScroll={(v) => setScrollTop(v)}
+								onScroll={(v: number) => setScrollTop(v)}
 								style={{
 									width: 236,
 									height: 140,
@@ -126,7 +126,7 @@ function ScrollDemo() {
 								scrollbarInset={6}
 								scrollbarTrackColor="rgba(255,255,255,0.14)"
 								scrollbarThumbColor="rgba(255,255,255,0.45)"
-								onScrollX={(v) => setScrollLeft(v)}
+								onScrollX={(v: number) => setScrollLeft(v)}
 								style={{
 									width: 236,
 									height: 64,
@@ -168,8 +168,8 @@ function ScrollDemo() {
 								scrollbarInset={6}
 								scrollbarTrackColor="rgba(255,255,255,0.14)"
 								scrollbarThumbColor="rgba(255,255,255,0.45)"
-								onScroll={(v) => setScrollXYTop(v)}
-								onScrollX={(v) => setScrollXYLeft(v)}
+								onScroll={(v: number) => setScrollXYTop(v)}
+								onScrollX={(v: number) => setScrollXYLeft(v)}
 								style={{
 									width: 236,
 									height: 120,
