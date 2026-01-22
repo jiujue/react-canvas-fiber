@@ -4,7 +4,7 @@
  * - Canvas 是 DOM 组件：内部创建自定义 reconciler root，并把 JSX 子树绘制到 2D canvas
  * - View/Rect/Text 是自定义 renderer 的 Host 节点：style 会交给 Yoga 做布局
  */
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useState } from 'react'
 
 export default function App() {

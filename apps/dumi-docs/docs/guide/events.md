@@ -7,7 +7,7 @@ title: Events（指针与点击）
 ## 点击切换
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useState } from 'react'
 
 export default function Demo() {
@@ -44,7 +44,7 @@ export default function Demo() {
 ## 拖拽移动（pointerdown + pointermove）
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useMemo, useState } from 'react'
 
 export default function Demo() {

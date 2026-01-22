@@ -56,7 +56,7 @@ pnpm add react-canvas-fiber
 ```
 
 ```tsx
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
 export function Example() {
 	return (

@@ -1,4 +1,4 @@
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Sprite = { x: number; y: number; vx: number; vy: number; size: number }

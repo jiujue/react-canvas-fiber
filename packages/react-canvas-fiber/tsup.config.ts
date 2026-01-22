@@ -8,5 +8,5 @@ export default defineConfig({
 	clean: true,
 	splitting: false,
 	treeshake: true,
-	external: ['react'],
+	external: ['react', 'react-dom'],
 })

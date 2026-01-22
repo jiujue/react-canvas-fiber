@@ -12,7 +12,7 @@
 		"clean": "rimraf dist .dumi/tmp"
 	},
 	"dependencies": {
-		"react-canvas-fiber": "workspace:*",
+		"@jiujue/react-canvas-fiber": "workspace:*",
 		"antd": "^6.2.0",
 		"dumi-theme-antd": "^0.4.4",
 		"react": "^18.2.0",

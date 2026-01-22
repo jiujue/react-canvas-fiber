@@ -1,4 +1,4 @@
-import { Canvas, Text, View } from 'react-canvas-fiber'
+import { Canvas, Text, View } from '@jiujue/react-canvas-fiber'
 import { useEffect, useMemo, useState } from 'react'
 import { buildTree, flattenTree, themes } from './utils'
 

@@ -1,6 +1,6 @@
 import { defineConfig } from 'dumi'
 
-const pathPreFix = 'react-canvas-fiber-dumi-pages'
+const pathPreFix = '@jiujue/react-canvas-fiber-dumi-pages'
 export default defineConfig({
 	title: 'Canvas Renderer',
 	logo: `/${pathPreFix}/logo.svg`,
@@ -32,7 +32,7 @@ export default defineConfig({
 
 	// ⑤ 主题配置（你原来的，保持不变）
 	themeConfig: {
-		name: 'react-canvas-fiber',
+		name: '@jiujue/react-canvas-fiber',
 		nav: [
 			{ title: '指南', link: '/guide/getting-started' },
 			{ title: '调研', link: '/research/overview' },

@@ -1,4 +1,4 @@
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { Card, Col, Divider, Row, Typography } from 'antd'
 import { Link } from 'dumi'
 import React from 'react'

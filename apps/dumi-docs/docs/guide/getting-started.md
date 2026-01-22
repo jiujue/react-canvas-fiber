@@ -7,7 +7,7 @@ title: Getting Started
 核心包名为 `react-canvas-fiber`：
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
 export default function Demo() {
 	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1

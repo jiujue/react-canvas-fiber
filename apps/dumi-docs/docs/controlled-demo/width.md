@@ -7,7 +7,7 @@ title: Rect width 受控实例
 ## Width
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useMemo, useState } from 'react'
 
 export default function Demo() {

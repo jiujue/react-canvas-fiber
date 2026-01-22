@@ -7,7 +7,7 @@ title: Rect
 ## Fill / Stroke / Radius
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
 export default function Demo() {
 	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
@@ -40,7 +40,7 @@ export default function Demo() {
 ## 点击示例
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useState } from 'react'
 
 export default function Demo() {

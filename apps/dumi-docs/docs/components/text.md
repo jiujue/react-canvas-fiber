@@ -7,7 +7,7 @@ title: Text
 ## 基础文本
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
 export default function Demo() {
 	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
@@ -36,7 +36,7 @@ export default function Demo() {
 ## 限制宽度（maxWidth）
 
 ```tsx | preview
-import { Canvas, Text, View } from 'react-canvas-fiber'
+import { Canvas, Text, View } from '@jiujue/react-canvas-fiber'
 
 export default function Demo() {
 	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1

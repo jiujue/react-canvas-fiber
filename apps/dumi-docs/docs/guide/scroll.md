@@ -5,7 +5,7 @@ title: Scroll（View 滚动）
 `View` 提供 `scrollX/scrollY` 与滚动条相关属性，用于实现画布内滚动容器。
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useMemo, useState } from 'react'
 
 export default function Demo() {
@@ -64,7 +64,7 @@ export default function Demo() {
 ```
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useMemo, useState } from 'react'
 
 export default function Demo() {

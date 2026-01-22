@@ -1,6 +1,6 @@
 {
-	"name": "react-canvas-fiber",
-	"version": "0.0.0",
+	"name": "@jiujue/react-canvas-fiber",
+	"version": "1.0.2",
 	"private": false,
 	"type": "module",
 	"license": "MIT",
@@ -9,6 +9,11 @@
 	"files": [
 		"dist"
 	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jiujue/react-canvas-fiber",
+		"directory": "packages/react-canvas-fiber"
+	},
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -20,12 +25,13 @@
 		}
 	},
 	"scripts": {
-		"build": "tsup",
-		"dev": "tsup --watch",
+		"build": "tsup --config tsup.config.ts",
+		"dev": "tsup --config tsup.config.ts --watch",
 		"clean": "rimraf dist"
 	},
 	"peerDependencies": {
-		"react": ">=18"
+		"react": ">=18",
+		"react-dom": ">=18"
 	},
 	"dependencies": {
 		"react-reconciler": "^0.29.0",

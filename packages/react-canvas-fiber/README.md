@@ -7,7 +7,7 @@
 发布到 npm 后可直接安装：
 
 ```bash
-pnpm add react-canvas-fiber
+pnpm add @jiujue/react-canvas-fiber
 ```
 
 本仓库内通过 pnpm workspace 引用（见 demo）。
@@ -15,7 +15,7 @@ pnpm add react-canvas-fiber
 ## 使用
 
 ```tsx
-import { Canvas, Rect, Text, View } from 'react-canvas-fiber'
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
 export function Example() {
 	return (
