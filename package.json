@@ -18,7 +18,8 @@
 		"prepare": "husky",
 		"changeset": "changeset",
 		"version-packages": "changeset version && pnpm install --no-frozen-lockfile",
-		"release": "pnpm build && changeset publish"
+		"release": "pnpm --filter @jiujue/react-canvas-fiber build && changeset publish",
+		"release:flow": "./scripts/release.sh"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx}": [
