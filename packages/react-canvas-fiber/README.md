@@ -1,18 +1,20 @@
 # react-canvas-fiber
 
-基于 `react-reconciler` 的 Canvas 自定义渲染器（2D），并集成 Yoga Flexbox 布局。
+[中文](./README.zh.md.md) | English
 
-## 安装
+A Canvas custom renderer (2D) based on `react-reconciler`, integrated with Yoga Flexbox layout.
 
-发布到 npm 后可直接安装：
+## Installation
+
+Once published to npm, you can install it directly:
 
 ```bash
 pnpm add @jiujue/react-canvas-fiber
 ```
 
-本仓库内通过 pnpm workspace 引用（见 demo）。
+Inside this monorepo, it is referenced via pnpm workspace (see the demo).
 
-## 使用
+## Usage
 
 ```tsx
 import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
@@ -29,29 +31,29 @@ export function Example() {
 }
 ```
 
-## 已支持的节点
+## Supported Nodes
 
-- `View`：布局容器，可设置 `background/borderRadius`
-- `Rect`：圆角矩形（fill/stroke/lineWidth/borderRadius）
-- `Text`：文本（text/color + font style 子集）
+- `View`: layout container, supports `background/borderRadius`
+- `Rect`: rounded rectangle (fill/stroke/lineWidth/borderRadius)
+- `Text`: text (`text/color` + a subset of font styles)
 
-## 布局（Yoga 子集）
+## Layout (Yoga Subset)
 
-主要通过 `style` 提供：
+Provided mainly via `style`:
 
-- 尺寸：`width/height/min/max`
-- Flex：`flexDirection/justifyContent/alignItems/flexGrow/flexShrink/flexBasis/flexWrap/gap`
-- 边距：`padding*`、`margin*`
-- 定位：`position/top/right/bottom/left`
+- Size: `width/height/min/max`
+- Flex: `flexDirection/justifyContent/alignItems/flexGrow/flexShrink/flexBasis/flexWrap/gap`
+- Spacing: `padding*`, `margin*`
+- Positioning: `position/top/right/bottom/left`
 
-## 实现说明
+## Implementation Notes
 
-详见 [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)。
+See [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md).
 
-## 参与贡献
+## Contributing
 
-见仓库根目录的 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
+See the repo root [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ## License
 
-MIT，见 [LICENSE](../../LICENSE)。
+MIT. See [LICENSE](../../LICENSE).
