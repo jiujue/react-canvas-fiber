@@ -1,4 +1,4 @@
-# react-canvas-fiber
+# @jiujue/react-canvas-fiber
 
 [English Version](../README.md)
 
@@ -47,12 +47,12 @@ pnpm -C apps/dumi-docs dev
 
 ## 使用核心库
 
-核心包名为 `react-canvas-fiber`，demo 里就是以工作区依赖的方式使用它：
+核心包名为 `@jiujue/react-canvas-fiber`，demo 里就是以工作区依赖的方式使用它：
 
 发布到 npm 后可直接安装：
 
 ```bash
-pnpm add react-canvas-fiber
+pnpm add @jiujue/react-canvas-fiber
 ```
 
 ```tsx

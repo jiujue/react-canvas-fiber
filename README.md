@@ -1,4 +1,4 @@
-# react-canvas-fiber
+# @jiujue/react-canvas-fiber
 
 [中文版](./docs/README.zh.md)
 
@@ -47,12 +47,12 @@ A Chrome DevTools panel is provided for inspecting the scene tree / node highlig
 
 ## Using the Core Library
 
-The core package name is `react-canvas-fiber`. The demo consumes it via a workspace dependency:
+The core package name is `@jiujue/react-canvas-fiber`. The demo consumes it via a workspace dependency:
 
 Install from npm (once published):
 
 ```bash
-pnpm add react-canvas-fiber
+pnpm add @jiujue/react-canvas-fiber
 ```
 
 ```tsx
