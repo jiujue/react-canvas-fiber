@@ -20,16 +20,51 @@ fi
 echo -e "${YELLOW}📦 Pulling latest changes...${NC}"
 git pull
 
-# 3. Create Changeset (Optional)
-echo -e "${YELLOW}❓ Do you need to create a new changeset? (y/n/enter to skip)${NC}"
-read -r create_changeset
-if [[ "$create_changeset" == "y" ]]; then
+# 3. Create Changeset
+echo -e "${YELLOW}❓ Select release type for @jiujue/react-canvas-fiber:${NC}"
+echo "1) patch (bug fixes)"
+echo "2) minor (new features)"
+echo "3) major (breaking changes)"
+echo "4) manual (interactive changeset cli)"
+echo "5) skip (use existing changesets)"
+
+read -r release_type
+
+case $release_type in
+  1) type="patch";;
+  2) type="minor";;
+  3) type="major";;
+  4) type="manual";;
+  *) type="skip";;
+esac
+
+if [[ "$type" == "patch" || "$type" == "minor" || "$type" == "major" ]]; then
+  echo -e "${YELLOW}📝 Enter release summary:${NC}"
+  read -r summary
+  
+  # Generate random filename
+  filename=".changeset/$(date +%s)-release.md"
+  
+  # Write changeset file
+  echo "---" > "$filename"
+  echo "\"@jiujue/react-canvas-fiber\": $type" >> "$filename"
+  echo "---" >> "$filename"
+  echo "" >> "$filename"
+  echo "$summary" >> "$filename"
+  
+  echo -e "${GREEN}✅ Created changeset ($type): $filename${NC}"
+  
+  echo -e "${YELLOW}💾 Committing changeset...${NC}"
+  git add "$filename"
+  git commit -m "chore: add $type changeset"
+
+elif [[ "$type" == "manual" ]]; then
   pnpm changeset
   echo -e "${GREEN}✅ Changeset created.${NC}"
   
   echo -e "${YELLOW}💾 Committing changeset...${NC}"
-  git add .
-  git commit -m "chore: add changeset"
+  git add .changeset/*.md
+  git commit -m "chore: add changeset" || true
 fi
 
 # 4. Bump Versions

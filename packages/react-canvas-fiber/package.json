@@ -30,16 +30,16 @@
 		"clean": "rimraf dist"
 	},
 	"peerDependencies": {
-		"react": "^18.0.0",
-		"react-dom": "^18.0.0"
+		"react": ">=18 <19",
+		"react-dom": ">=18 <19"
 	},
 	"dependencies": {
-		"react-reconciler": "^0.29.0",
+		"react-reconciler": "0.29.x",
 		"yoga-layout": "^3.2.1"
 	},
 	"devDependencies": {
 		"@types/react": "^18.2.48",
-		"@types/react-reconciler": "^0.28.9",
+		"@types/react-reconciler": "0.29.x",
 		"rimraf": "^6.0.1",
 		"tsup": "^8.3.5",
 		"typescript": "^5.5.4"
