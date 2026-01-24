@@ -7,7 +7,8 @@
 	"description": "A React custom renderer for Canvas2D with Yoga layout",
 	"sideEffects": false,
 	"files": [
-		"dist"
+		"dist",
+		"AI_GUIDE.md"
 	],
 	"repository": {
 		"type": "git",
