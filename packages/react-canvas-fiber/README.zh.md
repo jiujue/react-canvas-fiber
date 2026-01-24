@@ -12,6 +12,8 @@
 pnpm add @jiujue/react-canvas-fiber
 ```
 
+### Note: 本项目基于 React 内部机制实现，仅支持 React 18（>=18 <19），不兼容其他主版本。
+
 本仓库内通过 pnpm workspace 引用（见 demo）。
 
 ## 使用

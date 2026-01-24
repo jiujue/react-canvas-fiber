@@ -12,6 +12,8 @@ Once published to npm, you can install it directly:
 pnpm add @jiujue/react-canvas-fiber
 ```
 
+#### Note: This is a custom React renderer and must use the same major React version (18.x) as its reconciler. Mixing versions will break at runtime.
+
 Inside this monorepo, it is referenced via pnpm workspace (see the demo).
 
 ## Usage
