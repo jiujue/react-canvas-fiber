@@ -1,5 +1,11 @@
 # @jiujue/react-canvas-fiber
 
+## 2.0.3
+
+### Patch Changes
+
+- b1a181e: add ai guide
+
 ## 2.0.2
 
 ### Patch Changes
