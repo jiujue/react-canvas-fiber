@@ -208,6 +208,59 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		ctx.restore()
 	}
 
+	if (node.type === 'Image') {
+		const { imageInstance } = node
+		if (imageInstance && imageInstance.complete && imageInstance.naturalWidth > 0) {
+			const objectFit = node.props.objectFit || 'contain'
+			const srcW = imageInstance.naturalWidth
+			const srcH = imageInstance.naturalHeight
+
+			let dstX = x
+			let dstY = y
+			let dstW = w
+			let dstH = h
+			let srcX = 0
+			let srcY = 0
+			let finalSrcW = srcW
+			let finalSrcH = srcH
+
+			if (objectFit === 'fill') {
+				// stretch
+			} else if (objectFit === 'contain') {
+				const ratio = Math.min(w / srcW, h / srcH)
+				dstW = srcW * ratio
+				dstH = srcH * ratio
+				dstX = x + (w - dstW) / 2
+				dstY = y + (h - dstH) / 2
+			} else if (objectFit === 'cover') {
+				const ratio = Math.max(w / srcW, h / srcH)
+				const renderW = srcW * ratio
+				const renderH = srcH * ratio
+				srcX = (renderW - w) / 2 / ratio
+				srcY = (renderH - h) / 2 / ratio
+				finalSrcW = w / ratio
+				finalSrcH = h / ratio
+			}
+
+			ctx.save()
+			ctx.beginPath()
+			drawRoundedRect(ctx, x, y, w, h, 0)
+			ctx.clip()
+			ctx.drawImage(
+				imageInstance,
+				srcX,
+				srcY,
+				finalSrcW,
+				finalSrcH,
+				dstX,
+				dstY,
+				dstW,
+				dstH,
+			)
+			ctx.restore()
+		}
+	}
+
 	for (const child of node.children) {
 		drawNode(state, child, x, y)
 	}

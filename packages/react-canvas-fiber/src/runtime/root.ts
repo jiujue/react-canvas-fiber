@@ -32,6 +32,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 
 	let hoverId: number | null = null
 	let selectedId: number | null = null
+	let lastHoveredNode: CanvasNode | null = null
 
 	const toCanvasPoint = (clientX: number, clientY: number) => {
 		const rect = canvas.getBoundingClientRect()
@@ -618,6 +619,61 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		if (eventType === 'pointermove') {
 			const captured = pointerCapture.get(pointerId)
 			const target = captured ?? hitTest(init.x, init.y)
+
+			// Hover events (mouseenter/mouseleave simulation)
+			if (target !== lastHoveredNode) {
+				const prevChain: CanvasNode[] = []
+				let p = lastHoveredNode
+				while (p) {
+					prevChain.push(p)
+					p = p.parent
+				}
+
+				const nextChain: CanvasNode[] = []
+				let n = target
+				while (n) {
+					nextChain.push(n)
+					n = n.parent
+				}
+
+				// 1. Leave: nodes in prevChain NOT in nextChain (bottom-up)
+				for (const node of prevChain) {
+					if (!nextChain.includes(node)) {
+						const handler = (node.props as any)?.onPointerLeave
+						if (typeof handler === 'function') {
+							handler({
+								type: 'pointerleave',
+								...init,
+								target: node,
+								currentTarget: node,
+								defaultPrevented: false,
+								stopPropagation: () => {},
+								preventDefault: () => {},
+							})
+						}
+					}
+				}
+
+				// 2. Enter: nodes in nextChain NOT in prevChain (top-down)
+				const enteringNodes = nextChain.filter((node) => !prevChain.includes(node)).reverse()
+				for (const node of enteringNodes) {
+					const handler = (node.props as any)?.onPointerEnter
+					if (typeof handler === 'function') {
+						handler({
+							type: 'pointerenter',
+							...init,
+							target: node,
+							currentTarget: node,
+							defaultPrevented: false,
+							stopPropagation: () => {},
+							preventDefault: () => {},
+						})
+					}
+				}
+
+				lastHoveredNode = target
+			}
+
 			if (!target) return { defaultPrevented: false }
 			return dispatchOnPath(eventType, buildPath(target), init, target)
 		}
@@ -702,6 +758,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	 * React reconciler 的容器对象：RootNode + invalidate 回调。
 	 */
 	const container = { root: rootNode, invalidate, notifyCommit }
+	rootNode.container = container
 	const reconcilerRoot = createReconcilerRoot(container)
 
 	/**

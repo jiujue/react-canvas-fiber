@@ -1,6 +1,6 @@
 import { createElement } from 'react'
-import type { RectProps, TextProps, ViewProps } from '../types/jsx'
-export type { RectProps, TextProps, ViewProps, YogaStyle } from '../types/jsx'
+import type { ImageProps, RectProps, TextProps, ViewProps } from '../types/jsx'
+export type { ImageProps, RectProps, TextProps, ViewProps, YogaStyle } from '../types/jsx'
 
 /**
  * JSX 层组件：本身不渲染到 DOM。
@@ -9,6 +9,7 @@ export type { RectProps, TextProps, ViewProps, YogaStyle } from '../types/jsx'
  * - <View/> -> CanvasNode(type='View')
  * - <Rect/> -> CanvasNode(type='Rect')
  * - <Text/> -> CanvasNode(type='Text')
+ * - <Image/> -> CanvasNode(type='Image')
  */
 export function View(props: ViewProps) {
 	return createElement('View', props)
@@ -20,4 +21,8 @@ export function Rect(props: RectProps) {
 
 export function Text(props: TextProps) {
 	return createElement('Text', props)
+}
+
+export function Image(props: ImageProps) {
+	return createElement('Image', props)
 }

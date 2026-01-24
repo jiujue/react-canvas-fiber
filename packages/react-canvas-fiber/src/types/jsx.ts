@@ -6,6 +6,8 @@ export type CanvasPointerEventType =
 	| 'pointerup'
 	| 'pointercancel'
 	| 'click'
+	| 'pointerenter'
+	| 'pointerleave'
 
 export type CanvasPointerEvent = {
 	type: CanvasPointerEventType
@@ -103,6 +105,8 @@ export type ViewProps = {
 	onPointerCancel?: CanvasPointerEventHandler
 	onClickCapture?: CanvasPointerEventHandler
 	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
 }
 
 export type RectProps = {
@@ -123,6 +127,8 @@ export type RectProps = {
 	onPointerCancel?: CanvasPointerEventHandler
 	onClickCapture?: CanvasPointerEventHandler
 	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
 }
 
 export type TextProps = {
@@ -142,4 +148,26 @@ export type TextProps = {
 	onPointerCancel?: CanvasPointerEventHandler
 	onClickCapture?: CanvasPointerEventHandler
 	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
+}
+
+export type ImageProps = {
+	children?: never
+	style?: YogaStyle
+	src: string
+	objectFit?: 'cover' | 'contain' | 'fill'
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
 }

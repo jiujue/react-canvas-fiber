@@ -1,5 +1,14 @@
 import type { CanvasNode, NodeType, RootNode } from '../types'
-export type { CanvasNode, Layout, NodeType, RootNode, RectNode, TextNode, ViewNode } from '../types'
+export type {
+	CanvasNode,
+	Layout,
+	NodeType,
+	RootNode,
+	RectNode,
+	TextNode,
+	ViewNode,
+	ImageNode,
+} from '../types'
 
 let nextDebugId = 1
 
@@ -31,7 +40,7 @@ export function createRootNode(): RootNode {
  * 根据 intrinsic element type 创建场景节点。
  */
 export function createNode(type: Exclude<NodeType, 'Root'>, props: any): CanvasNode {
-	return {
+	const node = {
 		type,
 		debugId: nextDebugId++,
 		parent: null,
@@ -45,4 +54,10 @@ export function createNode(type: Exclude<NodeType, 'Root'>, props: any): CanvasN
 		scrollContentHeight: 0,
 		scrollbarDrag: null,
 	} as CanvasNode
+
+	if (type === 'Image') {
+		;(node as any).imageInstance = null
+	}
+
+	return node
 }

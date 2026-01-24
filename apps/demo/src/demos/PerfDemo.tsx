@@ -1,3 +1,17 @@
+/**
+ * PerfDemo: 压力测试与性能监控组件
+ *
+ * 功能概述：
+ * 1. 大量静态节点渲染：通过网格系统生成数千个静态矩形（staticRects），模拟复杂的 UI 背景。
+ * 2. 动态节点动画：生成数百个“精灵”节点（animatedSprites），在画布上随机移动、碰撞反弹。
+ * 3. 实时性能监控：内置 FPS 计数器，显示帧率和平均帧耗时。
+ * 4. 可调节参数：支持实时调整列数、行数、精灵数量，用于寻找性能瓶颈。
+ *
+ * 性能瓶颈分析点：
+ * - Layout: 节点数量增多时，Yoga 布局计算耗时增加。
+ * - Draw: Canvas 2D API 绘制指令增多带来的 GPU/CPU 开销。
+ * - Reconciler: 每一帧都通过 React 状态更新触发重绘，测试 React Diff 开销。
+ */
 import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -13,6 +27,19 @@ export default function Perf() {
 	const [cellSize, setCellSize] = useState(10)
 	const [spriteCount, setSpriteCount] = useState(180)
 	const [running, setRunning] = useState(true)
+
+	const presets = [
+		{ label: 'Low', cols: 20, rows: 15, sprites: 50 },
+		{ label: 'Medium', cols: 60, rows: 40, sprites: 200 },
+		{ label: 'High', cols: 120, rows: 80, sprites: 500 },
+		{ label: 'Stress', cols: 200, rows: 120, sprites: 800 },
+	]
+
+	const applyPreset = (p: (typeof presets)[0]) => {
+		setGridCols(p.cols)
+		setGridRows(p.rows)
+		setSpriteCount(p.sprites)
+	}
 
 	const [fps, setFps] = useState(0)
 	const [frameMs, setFrameMs] = useState(0)
@@ -100,6 +127,23 @@ export default function Perf() {
 		return rects
 	}, [settings])
 
+	const staticGrid = useMemo(() => {
+		return staticRects.map((r) => (
+			<Rect
+				key={`bg_${r.key}`}
+				style={{
+					position: 'absolute',
+					left: r.x,
+					top: r.y,
+					width: settings.size,
+					height: settings.size,
+				}}
+				borderRadius={2}
+				fill={r.fill}
+			/>
+		))
+	}, [staticRects, settings.size])
+
 	const animatedSprites = useMemo(() => {
 		const w = 900
 		const h = 520
@@ -132,12 +176,59 @@ export default function Perf() {
 			<div
 				style={{
 					display: 'flex',
+					flexDirection: 'column',
+					gap: 8,
+					marginBottom: 12,
+					padding: 12,
+					background: '#f8fafc',
+					borderRadius: 8,
+					border: '1px solid #e2e8f0',
+				}}
+			>
+				<h3 style={{ margin: 0, fontSize: 16 }}>压力测试说明</h3>
+				<ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#475569' }}>
+					<li>
+						<b>静态网格 (Grid):</b> 生成 {settings.cols}x{settings.rows} ={' '}
+						{settings.cols * settings.rows} 个静态矩形，模拟复杂 UI 背景
+					</li>
+					<li>
+						<b>动态精灵 (Sprites):</b> {spriteCount} 个随机运动的节点，每一帧都在更新位置和颜色
+					</li>
+					<li>
+						<b>测试目标:</b> 观察在大量节点 + 高频更新下的 FPS (Layout + Paint + React Diff
+						综合性能)
+					</li>
+				</ul>
+			</div>
+
+			<div
+				style={{
+					display: 'flex',
 					flexWrap: 'wrap',
 					gap: 10,
 					alignItems: 'center',
 					marginBottom: 12,
 				}}
 			>
+				<div style={{ display: 'flex', gap: 4, marginRight: 8 }}>
+					{presets.map((p) => (
+						<button
+							key={p.label}
+							type="button"
+							onClick={() => applyPreset(p)}
+							style={{
+								padding: '4px 8px',
+								borderRadius: 6,
+								border: '1px solid #cbd5e1',
+								background: '#f1f5f9',
+								fontSize: 12,
+								cursor: 'pointer',
+							}}
+						>
+							{p.label}
+						</button>
+					))}
+				</div>
 				<label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
 					Cols
 					<input
@@ -228,20 +319,7 @@ export default function Perf() {
 				<View style={{ width: 900, height: 520, padding: 0 }}>
 					<View style={{ width: 900, height: 520 }} background="#0b1020">
 						<View style={{ width: 900, height: 520, position: 'relative' }}>
-							{staticRects.map((r) => (
-								<Rect
-									key={`bg_${r.key}`}
-									style={{
-										position: 'absolute',
-										left: r.x,
-										top: r.y,
-										width: settings.size,
-										height: settings.size,
-									}}
-									borderRadius={2}
-									fill={r.fill}
-								/>
-							))}
+							{staticGrid}
 							{animatedSprites.map((sp) => (
 								<Rect
 									key={`sp_${sp.key}`}

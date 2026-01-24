@@ -1,6 +1,6 @@
 export type { CanvasProps } from './canvas'
 export type { LayoutEngine } from './layout'
-export type { CanvasNode, Layout, NodeType, RootNode, RectNode, TextNode, ViewNode } from './nodes'
+export type { CanvasNode, Layout, NodeType, RootNode, RectNode, TextNode, ViewNode, ImageNode } from './nodes'
 export type {
 	CanvasPointerEvent,
 	CanvasPointerEventHandler,
@@ -9,6 +9,7 @@ export type {
 	RectProps,
 	TextProps,
 	ViewProps,
+	ImageProps,
 	YogaStyle,
 } from './jsx'
 export type { CanvasContainer, CanvasRootOptions, MeasureTextFn } from './runtime'

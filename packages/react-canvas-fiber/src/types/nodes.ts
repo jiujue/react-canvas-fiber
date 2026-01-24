@@ -1,11 +1,12 @@
-import type { RectProps, TextProps, ViewProps } from './jsx'
+import type { CanvasContainer } from './runtime'
+import type { ImageProps, RectProps, TextProps, ViewProps } from './jsx'
 
 /**
  * 场景树节点类型集合。
  *
  * Root 只存在于容器层；View/Rect/Text 对应 JSX intrinsic elements。
  */
-export type NodeType = 'Root' | 'View' | 'Rect' | 'Text'
+export type NodeType = 'Root' | 'View' | 'Rect' | 'Text' | 'Image'
 
 /**
  * 布局结果：由 Yoga 计算得到的最终位置与尺寸（相对父节点坐标系）。
@@ -27,7 +28,7 @@ export type Layout = {
 export type BaseNode<T extends NodeType, P> = {
 	type: T
 	debugId: number
-	parent: CanvasNode | null
+	parent: CanvasNode | RootNode | null
 	children: CanvasNode[]
 	props: P
 	layout: Layout
@@ -47,9 +48,14 @@ export type BaseNode<T extends NodeType, P> = {
 /**
  * Root 节点没有 props（用 Record<string, never> 表示“空对象”且不允许额外字段）。
  */
-export type RootNode = BaseNode<'Root', Record<string, never>>
+export type RootNode = BaseNode<'Root', Record<string, never>> & {
+	container?: CanvasContainer
+}
 export type ViewNode = BaseNode<'View', ViewProps>
 export type RectNode = BaseNode<'Rect', RectProps>
 export type TextNode = BaseNode<'Text', TextProps>
+export type ImageNode = BaseNode<'Image', ImageProps> & {
+	imageInstance: HTMLImageElement | null
+}
 
-export type CanvasNode = ViewNode | RectNode | TextNode
+export type CanvasNode = ViewNode | RectNode | TextNode | ImageNode

@@ -32,7 +32,7 @@ export default defineConfig({
 
 	// ⑤ 主题配置（你原来的，保持不变）
 	themeConfig: {
-		name: '@jiujue/react-canvas-fiber',
+		name: 'react-canvas-fiber',
 		nav: [
 			{ title: '指南', link: '/guide/getting-started' },
 			{ title: '调研', link: '/research/overview' },

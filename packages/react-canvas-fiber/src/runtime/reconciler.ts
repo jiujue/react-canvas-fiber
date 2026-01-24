@@ -1,6 +1,6 @@
 import Reconciler from 'react-reconciler'
 import type { ReactNode } from 'react'
-import type { CanvasNode } from './nodes'
+import type { CanvasNode, ImageNode } from './nodes'
 import { createNode } from './nodes'
 import { freeYogaSubtree } from '../layout'
 import type { CanvasContainer } from '../types'
@@ -35,8 +35,22 @@ const hostConfig: any = {
 		return false
 	},
 
-	createInstance(type: string, props: any) {
-		return createNode(type as any, props)
+	createInstance(type: string, props: any, rootContainer: CanvasContainer) {
+		const node = createNode(type as any, props)
+		if (type === 'Image' && props.src) {
+			const imgNode = node as ImageNode
+			const img = new Image()
+			img.crossOrigin = 'anonymous'
+			img.src = props.src
+			if (img.dataset) {
+				img.dataset.src = props.src
+			}
+			imgNode.imageInstance = img
+			if (!img.complete) {
+				img.onload = () => rootContainer.invalidate()
+			}
+		}
+		return node
 	},
 	createTextInstance() {
 		/**
@@ -53,7 +67,7 @@ const hostConfig: any = {
 		parent.children.push(child)
 	},
 	appendChildToContainer(container: CanvasContainer, child: CanvasNode) {
-		child.parent = null
+		child.parent = container.root
 		container.root.children.push(child)
 		container.invalidate()
 	},
@@ -64,7 +78,7 @@ const hostConfig: any = {
 		else parent.children.push(child)
 	},
 	insertInContainerBefore(container: CanvasContainer, child: CanvasNode, beforeChild: CanvasNode) {
-		child.parent = null
+		child.parent = container.root
 		const idx = container.root.children.indexOf(beforeChild)
 		if (idx >= 0) container.root.children.splice(idx, 0, child)
 		else container.root.children.push(child)
@@ -99,6 +113,41 @@ const hostConfig: any = {
 	},
 	commitUpdate(instance: CanvasNode, updatePayload: UpdatePayload) {
 		instance.props = updatePayload
+		if (instance.type === 'Image') {
+			const imgNode = instance as ImageNode
+			const newSrc = (instance.props as any).src
+			const currentSrc = imgNode.imageInstance?.dataset?.src
+			if (newSrc !== currentSrc) {
+				if (!newSrc) {
+					imgNode.imageInstance = null
+				} else {
+					const img = new Image()
+					img.crossOrigin = 'anonymous'
+					img.src = newSrc
+					if (img.dataset) {
+						img.dataset.src = newSrc
+					}
+					imgNode.imageInstance = img
+
+					const invalidate = () => {
+						let p: any = imgNode
+						while (p) {
+							if (p.type === 'Root') {
+								p.container?.invalidate()
+								return
+							}
+							p = p.parent
+						}
+					}
+
+					if (!img.complete) {
+						img.onload = invalidate
+					} else {
+						invalidate()
+					}
+				}
+			}
+		}
 	},
 	commitTextUpdate() {},
 	resetTextContent() {},
