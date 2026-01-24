@@ -1,5 +1,11 @@
 # @jiujue/react-canvas-fiber
 
+## 2.0.4
+
+### Patch Changes
+
+- 0e5e305: feat(core): add scroll culling
+
 ## 2.0.3
 
 ### Patch Changes
