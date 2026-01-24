@@ -3,7 +3,7 @@ import { createRootNode } from './nodes'
 import { drawTree } from '../render'
 import { layoutTree } from '../layout'
 import { createReconcilerRoot } from './reconciler'
-import type { CanvasNode } from './nodes'
+import type { CanvasNode, RootNode } from './nodes'
 import type { CanvasPointerEventType, CanvasRootOptions, MeasureTextFn } from '../types'
 
 /**
@@ -64,7 +64,8 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		let current: CanvasNode | null = node
 		while (current) {
 			path.push(current)
-			current = current.parent
+			const nextParent: CanvasNode | RootNode | null = current.parent
+			current = nextParent && nextParent.type !== 'Root' ? nextParent : null
 		}
 
 		let absLeft = 0
@@ -83,14 +84,15 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 
 	const getScrollClipRects = (node: CanvasNode) => {
 		const rects: { x: number; y: number; width: number; height: number }[] = []
-		let current = node.parent
+		let current: CanvasNode | null = node.parent && node.parent.type !== 'Root' ? node.parent : null
 		while (current) {
 			if (current.type === 'View') {
 				const scrollX = !!(current.props as any)?.scrollX
 				const scrollY = !!(current.props as any)?.scrollY
 				if (scrollX || scrollY) rects.push(getAbsoluteRect(current))
 			}
-			current = current.parent
+			const nextParent: CanvasNode | RootNode | null = current.parent
+			current = nextParent && nextParent.type !== 'Root' ? nextParent : null
 		}
 		return rects.reverse()
 	}
@@ -123,11 +125,13 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 
 	/**
 	 * 合帧状态：
-	 * - dirty：本帧是否需要 layout+draw
+	 * - dirtyLayout：本帧是否需要 layout
+	 * - dirtyDraw：本帧是否需要 draw（包含 overlay）
 	 * - frameId：是否已安排下一帧
 	 */
 	let frameId: number | null = null
-	let dirty = true
+	let dirtyLayout = true
+	let dirtyDraw = true
 
 	/**
 	 * Text 的 Yoga 测量依赖外部测量函数。
@@ -150,14 +154,84 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	 * reconciler commit 完成后会调用它，从而把 React 更新“推”到画布渲染。
 	 */
 	const invalidate = () => {
-		dirty = true
+		dirtyLayout = true
+		dirtyDraw = true
 		if (frameId != null) return
 		frameId = requestAnimationFrame(async () => {
 			frameId = null
-			if (!dirty) return
-			dirty = false
-			await layoutTree(rootNode, options.width, options.height, measureText, options)
-			drawTree(rootNode, ctx, options.dpr, options.clearColor, options)
+			if (!dirtyLayout && !dirtyDraw) return
+			const needsLayout = dirtyLayout
+			const needsDraw = dirtyDraw || dirtyLayout
+			dirtyLayout = false
+			dirtyDraw = false
+			if (needsLayout) {
+				await layoutTree(rootNode, options.width, options.height, measureText, options)
+			}
+			if (needsDraw) {
+				drawTree(rootNode, ctx, options.dpr, options.clearColor, options)
+			}
+			const overlayHover = typeof hoverId === 'number' ? findNodeById(hoverId) : null
+			const overlaySelected = typeof selectedId === 'number' ? findNodeById(selectedId) : null
+			if (overlayHover || overlaySelected) {
+				ctx.save()
+				ctx.setTransform(options.dpr, 0, 0, options.dpr, 0, 0)
+
+				if (
+					overlayHover &&
+					(!overlaySelected || overlayHover.debugId !== overlaySelected.debugId)
+				) {
+					const r = getAbsoluteRect(overlayHover)
+					ctx.save()
+					for (const clip of getScrollClipRects(overlayHover)) {
+						ctx.beginPath()
+						ctx.rect(clip.x, clip.y, clip.width, clip.height)
+						ctx.clip()
+					}
+					ctx.fillStyle = 'rgba(59,130,246,0.12)'
+					ctx.strokeStyle = 'rgba(59,130,246,0.9)'
+					ctx.lineWidth = 1
+					ctx.fillRect(r.x, r.y, r.width, r.height)
+					ctx.strokeRect(r.x + 0.5, r.y + 0.5, Math.max(0, r.width - 1), Math.max(0, r.height - 1))
+					ctx.restore()
+				}
+
+				if (overlaySelected) {
+					const r = getAbsoluteRect(overlaySelected)
+					ctx.save()
+					for (const clip of getScrollClipRects(overlaySelected)) {
+						ctx.beginPath()
+						ctx.rect(clip.x, clip.y, clip.width, clip.height)
+						ctx.clip()
+					}
+					ctx.fillStyle = 'rgba(16,185,129,0.12)'
+					ctx.strokeStyle = 'rgba(16,185,129,0.95)'
+					ctx.lineWidth = 2
+					ctx.fillRect(r.x, r.y, r.width, r.height)
+					ctx.strokeRect(r.x + 1, r.y + 1, Math.max(0, r.width - 2), Math.max(0, r.height - 2))
+					ctx.restore()
+				}
+
+				ctx.restore()
+			}
+		})
+	}
+
+	const invalidateDrawOnly = () => {
+		dirtyDraw = true
+		if (frameId != null) return
+		frameId = requestAnimationFrame(async () => {
+			frameId = null
+			if (!dirtyLayout && !dirtyDraw) return
+			const needsLayout = dirtyLayout
+			const needsDraw = dirtyDraw || dirtyLayout
+			dirtyLayout = false
+			dirtyDraw = false
+			if (needsLayout) {
+				await layoutTree(rootNode, options.width, options.height, measureText, options)
+			}
+			if (needsDraw) {
+				drawTree(rootNode, ctx, options.dpr, options.clearColor, options)
+			}
 			const overlayHover = typeof hoverId === 'number' ? findNodeById(hoverId) : null
 			const overlaySelected = typeof selectedId === 'number' ? findNodeById(selectedId) : null
 			if (overlayHover || overlaySelected) {
@@ -406,7 +480,8 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		let current: CanvasNode | null = target
 		while (current) {
 			path.push(current)
-			current = current.parent
+			const nextParent: CanvasNode | RootNode | null = current.parent
+			current = nextParent && nextParent.type !== 'Root' ? nextParent : null
 		}
 		return path
 	}
@@ -566,7 +641,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 					capturedForScroll.scrollTop = clamped
 					const onScroll = (capturedForScroll.props as any)?.onScroll
 					if (typeof onScroll === 'function') onScroll(clamped)
-					invalidate()
+					invalidateDrawOnly()
 					return { defaultPrevented: true }
 				}
 
@@ -580,7 +655,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 				capturedForScroll.scrollLeft = clamped
 				const onScrollX = (capturedForScroll.props as any)?.onScrollX
 				if (typeof onScrollX === 'function') onScrollX(clamped)
-				invalidate()
+				invalidateDrawOnly()
 				return { defaultPrevented: true }
 			}
 
@@ -588,7 +663,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 				capturedForScroll.scrollbarDrag = null
 				pointerCapture.delete(pointerId)
 				pointerDownTarget.delete(pointerId)
-				invalidate()
+				invalidateDrawOnly()
 				return { defaultPrevented: true }
 			}
 		}
@@ -626,14 +701,16 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 				let p = lastHoveredNode
 				while (p) {
 					prevChain.push(p)
-					p = p.parent
+					const nextParent: CanvasNode | RootNode | null = p.parent
+					p = nextParent && nextParent.type !== 'Root' ? nextParent : null
 				}
 
 				const nextChain: CanvasNode[] = []
 				let n = target
 				while (n) {
 					nextChain.push(n)
-					n = n.parent
+					const nextParent: CanvasNode | RootNode | null = n.parent
+					n = nextParent && nextParent.type !== 'Root' ? nextParent : null
 				}
 
 				// 1. Leave: nodes in prevChain NOT in nextChain (bottom-up)
@@ -750,7 +827,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 			if (remainingX === 0 && remainingY === 0) break
 		}
 
-		if (defaultPrevented) invalidate()
+		if (defaultPrevented) invalidateDrawOnly()
 		return { defaultPrevented }
 	}
 
@@ -824,7 +901,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		setHighlight(next: { hoverId?: number | null; selectedId?: number | null }) {
 			if ('hoverId' in next) hoverId = next.hoverId ?? null
 			if ('selectedId' in next) selectedId = next.selectedId ?? null
-			invalidate()
+			invalidateDrawOnly()
 		},
 		subscribe(cb: () => void) {
 			commitSubscribers.add(cb)

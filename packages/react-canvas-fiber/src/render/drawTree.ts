@@ -69,6 +69,19 @@ function drawRoundedRect(
 	ctx.closePath()
 }
 
+function rectsIntersect(
+	ax: number,
+	ay: number,
+	aw: number,
+	ah: number,
+	bx: number,
+	by: number,
+	bw: number,
+	bh: number,
+) {
+	return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by
+}
+
 /**
  * 绘制单个节点及其子树。
  * offsetX/offsetY 为父节点累加的偏移，用于把 computed layout 转换成最终画布坐标。
@@ -111,7 +124,34 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 			ctx.beginPath()
 			ctx.rect(x, y, w, h)
 			ctx.clip()
+			const cullPadding = 1
+			const viewportX = x - cullPadding
+			const viewportY = y - cullPadding
+			const viewportW = w + cullPadding * 2
+			const viewportH = h + cullPadding * 2
 			for (const child of node.children) {
+				const bounds = child.contentBounds ?? {
+					x: 0,
+					y: 0,
+					width: child.layout.width,
+					height: child.layout.height,
+				}
+				const bx = x - scrollLeft + child.layout.x + bounds.x
+				const by = y - scrollTop + child.layout.y + bounds.y
+				if (
+					!rectsIntersect(
+						viewportX,
+						viewportY,
+						viewportW,
+						viewportH,
+						bx,
+						by,
+						bounds.width,
+						bounds.height,
+					)
+				) {
+					continue
+				}
 				drawNode(state, child, x - scrollLeft, y - scrollTop)
 			}
 			ctx.restore()
@@ -246,17 +286,7 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 			ctx.beginPath()
 			drawRoundedRect(ctx, x, y, w, h, 0)
 			ctx.clip()
-			ctx.drawImage(
-				imageInstance,
-				srcX,
-				srcY,
-				finalSrcW,
-				finalSrcH,
-				dstX,
-				dstY,
-				dstW,
-				dstH,
-			)
+			ctx.drawImage(imageInstance, srcX, srcY, finalSrcW, finalSrcH, dstX, dstY, dstW, dstH)
 			ctx.restore()
 		}
 	}

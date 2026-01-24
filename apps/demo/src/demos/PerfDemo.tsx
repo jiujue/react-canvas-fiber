@@ -127,23 +127,6 @@ export default function Perf() {
 		return rects
 	}, [settings])
 
-	const staticGrid = useMemo(() => {
-		return staticRects.map((r) => (
-			<Rect
-				key={`bg_${r.key}`}
-				style={{
-					position: 'absolute',
-					left: r.x,
-					top: r.y,
-					width: settings.size,
-					height: settings.size,
-				}}
-				borderRadius={2}
-				fill={r.fill}
-			/>
-		))
-	}, [staticRects, settings.size])
-
 	const animatedSprites = useMemo(() => {
 		const w = 900
 		const h = 520
@@ -319,7 +302,20 @@ export default function Perf() {
 				<View style={{ width: 900, height: 520, padding: 0 }}>
 					<View style={{ width: 900, height: 520 }} background="#0b1020">
 						<View style={{ width: 900, height: 520, position: 'relative' }}>
-							{staticGrid}
+							{staticRects.map((r) => (
+								<Rect
+									key={`bg_${r.key}`}
+									style={{
+										position: 'absolute',
+										left: r.x,
+										top: r.y,
+										width: settings.size,
+										height: settings.size,
+									}}
+									borderRadius={2}
+									fill={r.fill}
+								/>
+							))}
 							{animatedSprites.map((sp) => (
 								<Rect
 									key={`sp_${sp.key}`}

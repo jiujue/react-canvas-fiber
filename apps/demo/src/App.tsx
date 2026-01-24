@@ -3,9 +3,10 @@ import ScrollDemo from './demos/ScrollDemo'
 import FeatureDemo from './demos/FeatureDemo'
 import PerfDemo from './demos/PerfDemo'
 import TreeSelectDemo from './demos/TreeSelectDemo'
+import ScrollCullingDemo from './demos/ScrollCullingDemo'
 
 export default function App() {
-	const [mode, setMode] = useState<'scroll' | 'feature' | 'perf' | 'tree'>('scroll')
+	const [mode, setMode] = useState<'scroll' | 'cull' | 'feature' | 'perf' | 'tree'>('scroll')
 
 	return (
 		<div style={{ padding: 16, fontFamily: 'system-ui' }}>
@@ -23,6 +24,20 @@ export default function App() {
 					}}
 				>
 					Scroll Demo
+				</button>
+				<button
+					type="button"
+					onClick={() => setMode('cull')}
+					style={{
+						padding: '6px 10px',
+						borderRadius: 8,
+						border: '1px solid rgba(0,0,0,0.15)',
+						background: mode === 'cull' ? '#111827' : '#ffffff',
+						color: mode === 'cull' ? '#ffffff' : '#111827',
+						cursor: 'pointer',
+					}}
+				>
+					Culling
 				</button>
 				<button
 					type="button"
@@ -69,15 +84,18 @@ export default function App() {
 				<span style={{ color: 'rgba(17,24,39,0.7)', fontSize: 12 }}>
 					{mode === 'scroll'
 						? '滚动条 & 布局示例'
-						: mode === 'feature'
-							? 'Image & Hover 示例'
-							: mode === 'perf'
-								? '大量节点 + 动画压力测试'
-								: 'HTML Input + Canvas Tree 下拉选择'}
+						: mode === 'cull'
+							? '滚动视口外子树裁剪示例'
+							: mode === 'feature'
+								? 'Image & Hover 示例'
+								: mode === 'perf'
+									? '大量节点 + 动画压力测试'
+									: 'HTML Input + Canvas Tree 下拉选择'}
 				</span>
 			</div>
 
 			{mode === 'scroll' && <ScrollDemo />}
+			{mode === 'cull' && <ScrollCullingDemo />}
 			{mode === 'feature' && <FeatureDemo />}
 			{mode === 'perf' && <PerfDemo />}
 			{mode === 'tree' && <TreeSelectDemo />}

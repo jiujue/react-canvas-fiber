@@ -32,6 +32,7 @@ export type BaseNode<T extends NodeType, P> = {
 	children: CanvasNode[]
 	props: P
 	layout: Layout
+	contentBounds?: Layout
 	yogaNode: any | null
 	scrollLeft?: number
 	scrollTop?: number

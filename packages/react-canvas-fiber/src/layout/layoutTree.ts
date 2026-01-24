@@ -329,6 +329,35 @@ export async function layoutTree(
 		}
 	}
 	walk(root)
+
+	const computeSubtreeContentBounds = (node: CanvasNode) => {
+		let minX = 0
+		let minY = 0
+		let maxX = node.layout.width
+		let maxY = node.layout.height
+
+		for (const child of node.children) {
+			if (child.children.length) computeSubtreeContentBounds(child)
+			const childBounds = child.contentBounds ?? {
+				x: 0,
+				y: 0,
+				width: child.layout.width,
+				height: child.layout.height,
+			}
+			const bx = child.layout.x + childBounds.x
+			const by = child.layout.y + childBounds.y
+			const br = bx + childBounds.width
+			const bb = by + childBounds.height
+			minX = Math.min(minX, bx)
+			minY = Math.min(minY, by)
+			maxX = Math.max(maxX, br)
+			maxY = Math.max(maxY, bb)
+		}
+
+		node.contentBounds = { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+	}
+
+	for (const child of root.children) computeSubtreeContentBounds(child)
 }
 
 /**

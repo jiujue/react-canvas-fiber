@@ -112,7 +112,7 @@ export default function FeatureDemo() {
 							<View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
 								<Image
 									src="https://avatars.githubusercontent.com/u/1?v=4"
-									style={{ width: 40, height: 40, borderRadius: 20 }}
+									style={{ width: 40, height: 40 }}
 									objectFit="cover"
 								/>
 								<View style={{ flexDirection: 'column' }}>
@@ -130,8 +130,8 @@ export default function FeatureDemo() {
 										onPointerLeave={() => setHoveredBtn(null)}
 										style={{
 											padding: 8,
-											borderRadius: 6,
 										}}
+										borderRadius={6}
 										background={hoveredBtn === id ? '#3b82f6' : 'rgba(255,255,255,0.1)'}
 									>
 										<Text

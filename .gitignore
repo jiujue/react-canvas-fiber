@@ -29,3 +29,6 @@ dist-ssr
 
 apps/devtools-extension/.plasmo/
 apps/devtools-extension/build/
+
+# trae
+.trae/*
