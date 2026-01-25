@@ -56,7 +56,7 @@ pnpm add @jiujue/react-canvas-fiber
 ```
 
 ```tsx
-import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
+import { Canvas, Image, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
 export function Example() {
 	return (
@@ -66,6 +66,12 @@ export function Example() {
 					text="Hello Canvas Renderer"
 					style={{ fontSize: 24, fontWeight: 700 }}
 					color="#e6edf7"
+				/>
+				<Image
+					src="https://gw.alipayobjects.com/zos/antfincdn/LlvErxo8H9/photo-1503149779833-1de50ebe5f8a.webp"
+					style={{ width: 100, height: 100 }}
+					borderRadius={12}
+					objectFit="cover"
 				/>
 				<Rect style={{ width: 180, height: 44 }} borderRadius={10} fill="#2b6cff" />
 			</View>

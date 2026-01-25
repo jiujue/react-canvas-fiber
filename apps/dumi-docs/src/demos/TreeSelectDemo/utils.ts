@@ -15,11 +15,9 @@ export type FlatNode = {
 	depth: number
 }
 
-// 模拟业务字段：类型与负责人
 export const typePalette = ['系统', '模块', '目录', '数据', '接口']
 export const ownerPalette = ['平台组', '数据组', '增长组', '业务组', '架构组']
 
-// 主题配置：统一控制 Canvas 与下拉内容颜色
 export const themes = {
 	dark: {
 		canvasBg: '#0b1226',
@@ -67,15 +65,85 @@ export const themes = {
 	},
 }
 
-// 按总量与深度生成一棵树，便于调整性能与滚动演示规模
+type TreePlan = {
+	depth: number
+	nodesPerLevel: number[]
+	childCounts: number[][]
+}
+
+function clampInt(value: number, min: number, max: number) {
+	if (!Number.isFinite(value)) return min
+	return Math.max(min, Math.min(max, Math.trunc(value)))
+}
+
+function createRng(seed: number) {
+	let state = (seed | 0) ^ 0x9e3779b9
+	const nextU32 = () => {
+		state = (Math.imul(state, 1664525) + 1013904223) | 0
+		return state >>> 0
+	}
+	return {
+		nextU32,
+		nextInt(maxExclusive: number) {
+			if (maxExclusive <= 0) return 0
+			return nextU32() % maxExclusive
+		},
+	}
+}
+
+function planTree(total: number, maxDepth: number, seed = 0): TreePlan {
+	const clampedTotal = clampInt(total, 1, Number.MAX_SAFE_INTEGER)
+	const requestedDepth = clampInt(maxDepth, 1, 32)
+	const depth = Math.max(1, Math.min(requestedDepth, clampedTotal))
+	const rng = createRng(seed)
+
+	const nodesPerLevel = new Array(depth).fill(1)
+	nodesPerLevel[0] = 1
+
+	if (depth > 1) {
+		const remaining = clampedTotal - depth
+		const weights = new Array(depth).fill(0).map((_, level) => (level === 0 ? 0 : depth - level))
+		const weightSum = weights.reduce((acc, w) => acc + w, 0)
+		const fractional: Array<{ level: number; frac: number }> = []
+		let allocated = 0
+
+		for (let level = 1; level < depth; level += 1) {
+			const raw = (remaining * weights[level]) / weightSum
+			const add = Math.floor(raw)
+			nodesPerLevel[level] += add
+			allocated += add
+			fractional.push({ level, frac: raw - add })
+		}
+
+		const left = remaining - allocated
+		fractional.sort((a, b) => (b.frac !== a.frac ? b.frac - a.frac : a.level - b.level))
+		for (let i = 0; i < left; i += 1) {
+			nodesPerLevel[fractional[i % fractional.length].level] += 1
+		}
+	}
+
+	const childCounts: number[][] = []
+	for (let level = 0; level < depth - 1; level += 1) {
+		const parentCount = nodesPerLevel[level]
+		const childTotal = nodesPerLevel[level + 1]
+		const base = Math.floor(childTotal / parentCount)
+		const rem = childTotal % parentCount
+		const counts = new Array(parentCount).fill(base)
+		const offset = rng.nextInt(parentCount)
+		for (let i = 0; i < rem; i += 1) {
+			counts[(offset + i) % parentCount] += 1
+		}
+		childCounts.push(counts)
+	}
+
+	return { depth, nodesPerLevel, childCounts }
+}
+
 export function buildTree(total: number, maxDepth: number, seed = 0) {
-	// 约束输入范围，避免极端值
-	const clampedTotal = Math.max(8, Math.min(total, 360))
-	const clampedDepth = Math.max(2, Math.min(maxDepth, 8))
+	const plan = planTree(total, maxDepth, seed)
 	const seedOffset = Math.abs(seed) % 997
 	let cursor = 0
 
-	// 生成一个节点，并带上业务字段
 	const makeNode = (): TreeNode => {
 		const id = `node-${cursor}`
 		const index = cursor
@@ -92,44 +160,27 @@ export function buildTree(total: number, maxDepth: number, seed = 0) {
 		}
 	}
 
-	const roots: TreeNode[] = []
-	const queue: Array<{ node: TreeNode; depth: number }> = []
-	const rootCount = Math.min(4, clampedTotal)
-
-	// 初始化若干根节点
-	for (let i = 0; i < rootCount; i += 1) {
-		const node = makeNode()
-		roots.push(node)
-		queue.push({ node, depth: 0 })
+	const levels: TreeNode[][] = new Array(plan.depth)
+	levels[0] = [makeNode()]
+	for (let level = 0; level < plan.depth - 1; level += 1) {
+		const parents = levels[level]
+		const counts = plan.childCounts[level]
+		const next: TreeNode[] = []
+		for (let pIndex = 0; pIndex < parents.length; pIndex += 1) {
+			const parent = parents[pIndex]
+			const childCount = counts[pIndex] ?? 0
+			for (let i = 0; i < childCount; i += 1) {
+				const child = makeNode()
+				parent.children.push(child)
+				next.push(child)
+			}
+		}
+		levels[level + 1] = next
 	}
 
-	// 广度优先扩展，保证层级均匀增长
-	while (queue.length && cursor < clampedTotal) {
-		const current = queue.shift()
-		if (!current) break
-		if (current.depth >= clampedDepth - 1) continue
-
-		const remaining = clampedTotal - cursor
-		const baseCount = 1 + ((Number(current.node.id.split('-')[1]) + seedOffset) % 3)
-		let childCount = baseCount + (current.depth % 2)
-		if (clampedDepth === 2 && current.depth === 0) {
-			const remainingParents = queue.length + 1
-			const target = Math.ceil(remaining / remainingParents)
-			childCount = Math.max(1, target)
-		}
-		childCount = Math.min(remaining, childCount)
-		for (let i = 0; i < childCount; i += 1) {
-			const child = makeNode()
-			current.node.children.push(child)
-			queue.push({ node: child, depth: current.depth + 1 })
-			if (cursor >= clampedTotal) break
-		}
-	}
-
-	return roots
+	return levels[0]
 }
 
-// 根据展开状态把树拍平成列表，方便滚动渲染
 export function flattenTree(nodes: TreeNode[], expanded: Set<string>) {
 	const list: FlatNode[] = []
 	const walk = (items: TreeNode[], depth: number) => {

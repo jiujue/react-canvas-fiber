@@ -2,7 +2,7 @@
 title: Events（指针与点击）
 ---
 
-`View` / `Rect` / `Text` 支持 `onPointerDown/Move/Up/Cancel` 与 `onClick`（含 Capture 版本）。
+`View` / `Rect` / `Text` / `Image` 支持 `onPointerDown/Move/Up/Cancel`、`onPointerEnter/Leave` 与 `onClick`（含 Capture 版本）。
 
 ## 点击切换
 
@@ -35,6 +35,47 @@ export default function Demo() {
 						color="rgba(229,231,235,0.75)"
 					/>
 				</View>
+			</View>
+		</Canvas>
+	)
+}
+```
+
+## 悬停交互（onPointerEnter/Leave）
+
+```tsx | preview
+import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
+import { useState } from 'react'
+
+export default function HoverDemo() {
+	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+	const [hovered, setHovered] = useState(false)
+
+	return (
+		<Canvas width={720} height={260} dpr={dpr} clearColor="#0b1020">
+			<View style={{ width: 720, height: 260, justifyContent: 'center', alignItems: 'center' }}>
+				<Rect
+					style={{ width: 200, height: 200 }}
+					borderRadius={24}
+					fill={hovered ? '#3b82f6' : '#1e293b'}
+					onPointerEnter={() => setHovered(true)}
+					onPointerLeave={() => setHovered(false)}
+				>
+					<View
+						style={{
+							width: '100%',
+							height: '100%',
+							justifyContent: 'center',
+							alignItems: 'center',
+						}}
+					>
+						<Text
+							text={hovered ? 'Hovered!' : 'Hover Me'}
+							style={{ fontSize: 24, fontWeight: 700 }}
+							color={hovered ? '#ffffff' : '#94a3b8'}
+						/>
+					</View>
+				</Rect>
 			</View>
 		</Canvas>
 	)

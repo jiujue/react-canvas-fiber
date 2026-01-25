@@ -156,125 +156,6 @@ export default function TreeSelectDemo() {
 		: []
 	const canvasRowsBuildMs = open ? now() - canvasRowsBuildStart : 0
 
-	const divRowsBuildStart = open ? now() : 0
-	const divRows = open
-		? flatNodes.map(({ node, depth }) => {
-				const expanded = expandedIds.has(node.id)
-				const hasChildren = node.children.length > 0
-				const selected = node.id === selectedId
-				return (
-					<div
-						key={node.id}
-						onClick={() => selectNode(node.id)}
-						style={{
-							height: 48,
-							padding: '0 10px',
-							display: 'flex',
-							flexDirection: 'row',
-							alignItems: 'center',
-							gap: 8,
-							background: selected ? theme.rowActive : theme.rowBg,
-							borderRadius: 9,
-							cursor: 'pointer',
-							userSelect: 'none',
-							boxSizing: 'border-box',
-						}}
-					>
-						<div style={{ width: 12 + depth * 10, height: 1 }} />
-						<span
-							onClick={(e) => {
-								e.stopPropagation()
-								if (hasChildren) toggleExpanded(node.id)
-							}}
-							style={{
-								fontSize: 30,
-								width: 20,
-								display: 'inline-flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								color: hasChildren ? theme.iconText : theme.iconMuted,
-								cursor: hasChildren ? 'pointer' : 'default',
-							}}
-						>
-							{hasChildren ? (expanded ? '▾' : '▸') : '•'}
-						</span>
-						<div
-							style={{ display: 'flex', flexDirection: 'column', gap: 3, flexGrow: 1, minWidth: 0 }}
-						>
-							<div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
-								<span
-									style={{
-										fontSize: 13,
-										fontWeight: 700,
-										color: theme.titleText,
-										whiteSpace: 'nowrap',
-										overflow: 'hidden',
-										textOverflow: 'ellipsis',
-									}}
-								>
-									{node.label}
-								</span>
-								<span
-									style={{
-										height: 18,
-										padding: '0 6px',
-										display: 'inline-flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-										background: theme.tagBg,
-										borderRadius: 5,
-										flexShrink: 0,
-									}}
-								>
-									<span style={{ fontSize: 10, color: theme.tagText, lineHeight: '18px' }}>
-										{node.type}
-									</span>
-								</span>
-								<span style={{ fontSize: 10, color: theme.codeText, flexShrink: 0 }}>
-									{node.code}
-								</span>
-							</div>
-							<div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
-								<span style={{ fontSize: 10, color: theme.labelText, whiteSpace: 'nowrap' }}>
-									负责人 · {node.owner}
-								</span>
-								<span
-									style={{
-										height: 16,
-										padding: '0 6px',
-										display: 'inline-flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-										background: theme.countBg,
-										borderRadius: 5,
-										flexShrink: 0,
-									}}
-								>
-									<span style={{ fontSize: 10, color: theme.countText, lineHeight: '16px' }}>
-										指标 {node.count}
-									</span>
-								</span>
-							</div>
-						</div>
-						<div
-							style={{
-								width: 70,
-								display: 'flex',
-								justifyContent: 'flex-end',
-								alignItems: 'center',
-								flexShrink: 0,
-							}}
-						>
-							<span style={{ fontSize: 10, color: theme.metaText, whiteSpace: 'nowrap' }}>
-								{hasChildren ? `${node.children.length} 子级` : '叶子节点'}
-							</span>
-						</div>
-					</div>
-				)
-			})
-		: []
-	const divRowsBuildMs = open ? now() - divRowsBuildStart : 0
-
 	return (
 		<div style={{ fontFamily: 'system-ui', maxWidth: 1180 }}>
 			<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -358,8 +239,6 @@ export default function TreeSelectDemo() {
 						{open ? '收起下拉' : '展开下拉'}
 					</button>
 				</div>
-
-				{/* HTML 输入区：展示选中项并驱动下拉显隐 */}
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
 					<label style={{ fontSize: 12, color: 'rgba(17,24,39,0.75)' }}>Tree Select</label>
 					<div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -456,69 +335,6 @@ export default function TreeSelectDemo() {
 								</View>
 							</View>
 						</Canvas>
-						<div
-							style={{
-								width,
-								height,
-								borderRadius: 12,
-								border: '1px solid rgba(0,0,0,0.12)',
-								background: theme.canvasBg,
-								overflow: 'hidden',
-								boxSizing: 'border-box',
-							}}
-						>
-							<style>{`
-								.tree-select-div-scroll {
-									scrollbar-color: ${theme.scrollbarThumb} ${theme.scrollbarTrack};
-									scrollbar-width: thin;
-								}
-								.tree-select-div-scroll::-webkit-scrollbar { width: 10px; }
-								.tree-select-div-scroll::-webkit-scrollbar-track { background: ${theme.scrollbarTrack}; border-radius: 999px; }
-								.tree-select-div-scroll::-webkit-scrollbar-thumb { background: ${theme.scrollbarThumb}; border-radius: 999px; }
-							`}</style>
-							<div
-								style={{
-									width,
-									height,
-									padding: 12,
-									display: 'flex',
-									flexDirection: 'column',
-									gap: 8,
-									boxSizing: 'border-box',
-								}}
-							>
-								<div style={{ display: 'flex', justifyContent: 'space-between' }}>
-									<div style={{ fontSize: 15, fontWeight: 700, color: theme.titleText }}>
-										Div Tree 下拉
-									</div>
-									<div style={{ fontSize: 11, color: theme.metaText }}>
-										节点 {flatNodes.length} / {totalCount} · build {divRowsBuildMs.toFixed(2)}ms
-									</div>
-								</div>
-								<div
-									className="tree-select-div-scroll"
-									style={{
-										flexGrow: 1,
-										padding: 8,
-										display: 'flex',
-										flexDirection: 'column',
-										gap: 6,
-										background: theme.panelBg,
-										borderRadius: 9,
-										overflowY: 'auto',
-										boxSizing: 'border-box',
-									}}
-								>
-									{divRows}
-								</div>
-								<div style={{ display: 'flex', justifyContent: 'space-between' }}>
-									<div style={{ fontSize: 10, color: theme.metaText }}>
-										点击节点选中，点击箭头展开/收起
-									</div>
-									<div style={{ fontSize: 10, color: theme.codeText }}>下拉内容完全由 Div 渲染</div>
-								</div>
-							</div>
-						</div>
 					</div>
 				) : null}
 			</div>

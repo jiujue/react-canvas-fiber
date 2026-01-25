@@ -82,6 +82,60 @@ function rectsIntersect(
 	return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by
 }
 
+type ResolvedBorder = { width: number; color: string }
+
+function resolveBorder(value: unknown): ResolvedBorder | null {
+	if (typeof value !== 'string') return null
+	const raw = value.trim()
+	if (!raw) return null
+	const normalized = raw.replace(/\s+/g, ' ')
+	const match = normalized.match(/^([0-9]*\.?[0-9]+)(px)?\s+(?:solid\s+)?(.+)$/i)
+	if (match) {
+		const width = Number(match[1])
+		const color = match[3]?.trim()
+		if (Number.isFinite(width) && width > 0 && color) return { width, color }
+		return null
+	}
+
+	const withoutSolid = normalized
+		.replace(/\bsolid\b/gi, ' ')
+		.replace(/\s+/g, ' ')
+		.trim()
+	const match2 = withoutSolid.match(/^([0-9]*\.?[0-9]+)(px)?\s+(.+)$/i)
+	if (match2) {
+		const width = Number(match2[1])
+		const color = match2[3]?.trim()
+		if (Number.isFinite(width) && width > 0 && color) return { width, color }
+		return null
+	}
+
+	if (/^[0-9]/.test(withoutSolid)) return null
+	if (!withoutSolid) return null
+	return { width: 1, color: withoutSolid }
+}
+
+function drawBorder(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	radius: number,
+	border: ResolvedBorder,
+) {
+	if (!Number.isFinite(border.width) || border.width <= 0) return
+	const inset = border.width / 2
+	const bw = w - border.width
+	const bh = h - border.width
+	if (bw <= 0 || bh <= 0) return
+	ctx.save()
+	ctx.strokeStyle = border.color
+	ctx.lineWidth = border.width
+	drawRoundedRect(ctx, x + inset, y + inset, bw, bh, Math.max(0, radius - inset))
+	ctx.stroke()
+	ctx.restore()
+}
+
 /**
  * 绘制单个节点及其子树。
  * offsetX/offsetY 为父节点累加的偏移，用于把 computed layout 转换成最终画布坐标。
@@ -93,8 +147,14 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 	const w = node.layout.width
 	const h = node.layout.height
 
+	let viewBorder: ResolvedBorder | null = null
+	let viewRadius = 0
+	let viewIsScroll = false
+
 	if (node.type === 'View') {
 		const background = (node.props as any).background
+		viewBorder = resolveBorder((node.props as any).border)
+		viewRadius = (node.props as any).borderRadius ?? 0
 		const scrollX = !!(node.props as any)?.scrollX
 		const scrollY = !!(node.props as any)?.scrollY
 		const scrollLeft = scrollX ? (node.scrollLeft ?? 0) : 0
@@ -111,15 +171,15 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		const maxScrollTop = Math.max(0, contentHeight - h)
 
 		if (background) {
-			const radius = (node.props as any).borderRadius ?? 0
 			ctx.save()
 			ctx.fillStyle = background
-			drawRoundedRect(ctx, x, y, w, h, radius)
+			drawRoundedRect(ctx, x, y, w, h, viewRadius)
 			ctx.fill()
 			ctx.restore()
 		}
 
 		if (scrollX || scrollY) {
+			viewIsScroll = true
 			ctx.save()
 			ctx.beginPath()
 			ctx.rect(x, y, w, h)
@@ -210,6 +270,7 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 				ctx.restore()
 			}
 
+			if (viewBorder) drawBorder(ctx, x, y, w, h, viewRadius, viewBorder)
 			return
 		}
 	}
@@ -252,6 +313,7 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		const { imageInstance } = node
 		if (imageInstance && imageInstance.complete && imageInstance.naturalWidth > 0) {
 			const objectFit = node.props.objectFit || 'contain'
+			const radius = node.props.borderRadius ?? 0
 			const srcW = imageInstance.naturalWidth
 			const srcH = imageInstance.naturalHeight
 
@@ -284,7 +346,7 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 
 			ctx.save()
 			ctx.beginPath()
-			drawRoundedRect(ctx, x, y, w, h, 0)
+			drawRoundedRect(ctx, x, y, w, h, radius)
 			ctx.clip()
 			ctx.drawImage(imageInstance, srcX, srcY, finalSrcW, finalSrcH, dstX, dstY, dstW, dstH)
 			ctx.restore()
@@ -293,6 +355,10 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 
 	for (const child of node.children) {
 		drawNode(state, child, x, y)
+	}
+
+	if (node.type === 'View' && !viewIsScroll && viewBorder) {
+		drawBorder(ctx, x, y, w, h, viewRadius, viewBorder)
 	}
 }
 

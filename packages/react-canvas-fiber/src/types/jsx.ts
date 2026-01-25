@@ -83,6 +83,7 @@ export type ViewProps = {
 	children?: ReactNode
 	style?: YogaStyle
 	background?: string
+	border?: string
 	borderRadius?: number
 	scrollX?: boolean
 	scrollY?: boolean
@@ -157,6 +158,7 @@ export type ImageProps = {
 	style?: YogaStyle
 	src: string
 	objectFit?: 'cover' | 'contain' | 'fill'
+	borderRadius?: number
 	pointerEvents?: PointerEventsMode
 	onPointerDownCapture?: CanvasPointerEventHandler
 	onPointerDown?: CanvasPointerEventHandler
