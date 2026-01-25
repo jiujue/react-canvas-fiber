@@ -1,6 +1,6 @@
 import { defineConfig } from 'dumi'
 
-const pathPreFix = '@jiujue/react-canvas-fiber-dumi-pages'
+const pathPreFix = 'react-canvas-fiber'
 export default defineConfig({
 	title: 'Canvas Renderer',
 	logo: `/${pathPreFix}/logo.svg`,
