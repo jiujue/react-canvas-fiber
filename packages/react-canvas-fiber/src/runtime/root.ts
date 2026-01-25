@@ -1026,9 +1026,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 				stopPicker() {
 					if (!this.picker.enabled) return
 					this.picker.enabled = false
-					this.picker.rootInstanceId = null
 					this.picker.hoverId = null
-					this.picker.selectedId = null
 					this.pickerCleanup?.()
 					this.pickerCleanup = null
 				},
@@ -1038,7 +1036,12 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 				unregisterRoot(id: number) {
 					const handle = this.roots.get(id)
 					if (!handle) return
-					if (this.picker.rootInstanceId === id) this.stopPicker()
+					if (this.picker.rootInstanceId === id) {
+						if (this.picker.enabled) this.stopPicker()
+						this.picker.rootInstanceId = null
+						this.picker.hoverId = null
+						this.picker.selectedId = null
+					}
 					handle.unsubscribe?.()
 					this.roots.delete(id)
 				},

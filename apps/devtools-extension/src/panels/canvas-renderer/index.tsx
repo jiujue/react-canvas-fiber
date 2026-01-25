@@ -162,6 +162,7 @@ export default function CanvasRendererPanel() {
 	const [error, setError] = useState<string | null>(null)
 	const lastRootRevisionRef = useRef<number>(0)
 	const hoverIdRef = useRef<number | null>(null)
+	const lastSyncedPickerSelectedIdRef = useRef<number | null>(null)
 
 	useEffect(() => {
 		let cancelled = false
@@ -261,12 +262,23 @@ export default function CanvasRendererPanel() {
 
 	useEffect(() => {
 		if (rootInstanceId == null) return
+		lastSyncedPickerSelectedIdRef.current = null
 		const id = window.setInterval(async () => {
 			const state = await getPickerState()
 			setPicker(state)
-			if (!state?.enabled && state?.selectedId != null && state.rootInstanceId === rootInstanceId) {
-				setSelectedId(state.selectedId)
-				await setHighlight(rootInstanceId, { selectedId: state.selectedId, hoverId: null })
+			if (!state?.enabled) {
+				const pickedId =
+					state?.selectedId != null && state.rootInstanceId === rootInstanceId
+						? state.selectedId
+						: null
+				if (pickedId == null) {
+					lastSyncedPickerSelectedIdRef.current = null
+					return
+				}
+				if (pickedId === lastSyncedPickerSelectedIdRef.current) return
+				lastSyncedPickerSelectedIdRef.current = pickedId
+				setSelectedId(pickedId)
+				await setHighlight(rootInstanceId, { selectedId: pickedId, hoverId: null })
 			}
 		}, 80)
 		return () => window.clearInterval(id)
@@ -284,6 +296,21 @@ export default function CanvasRendererPanel() {
 
 	const treeRootIds = useMemo(() => snapshot?.rootChildrenIds ?? [], [snapshot])
 
+	useEffect(() => {
+		if (!snapshot || selectedId == null) return
+		const selectedMeta = snapshot.nodesById[selectedId]
+		if (!selectedMeta) return
+		setExpanded((prev: Set<number>) => {
+			const next = new Set(prev)
+			let cur: typeof selectedMeta | undefined = selectedMeta
+			while (cur?.parentId != null) {
+				next.add(cur.parentId)
+				cur = snapshot.nodesById[cur.parentId]
+			}
+			return next
+		})
+	}, [snapshot, selectedId])
+
 	const toggleExpand = (id: number) => {
 		setExpanded((prev: Set<number>) => {
 			const next = new Set(prev)
@@ -291,6 +318,42 @@ export default function CanvasRendererPanel() {
 			else next.add(id)
 			return next
 		})
+	}
+
+	const expandOneLevel = () => {
+		if (!snapshot) return
+		setExpanded((prev: Set<number>) => {
+			const next = new Set(prev)
+			const visible = new Set<number>()
+			const walk = (id: number) => {
+				if (visible.has(id)) return
+				visible.add(id)
+				const meta = snapshot.nodesById[id]
+				if (!meta) return
+				if (!prev.has(id)) return
+				for (const childId of meta.childrenIds) walk(childId)
+			}
+			for (const rootId of snapshot.rootChildrenIds) walk(rootId)
+			for (const id of visible) {
+				const meta = snapshot.nodesById[id]
+				if (meta?.childrenIds.length) next.add(id)
+			}
+			return next
+		})
+	}
+
+	const collapseAll = () => {
+		if (!snapshot) return
+		setExpanded(new Set(snapshot.rootChildrenIds))
+	}
+
+	const expandAll = () => {
+		if (!snapshot) return
+		const next = new Set<number>()
+		for (const meta of Object.values(snapshot.nodesById)) {
+			if (meta.childrenIds.length) next.add(meta.id)
+		}
+		setExpanded(next)
 	}
 
 	const onHoverNode = async (id: number | null) => {
@@ -437,6 +500,29 @@ export default function CanvasRendererPanel() {
 					style={{ padding: 10, borderRight: '1px solid rgba(255,255,255,0.10)', overflow: 'auto' }}
 				>
 					<div style={{ fontWeight: 700, marginBottom: 8 }}>Scene Tree</div>
+					<div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+						<button
+							style={{ ...buttonStyle, padding: '4px 8px', fontSize: 12 }}
+							disabled={!snapshot}
+							onClick={() => collapseAll()}
+						>
+							全部收起
+						</button>
+						<button
+							style={{ ...buttonStyle, padding: '4px 8px', fontSize: 12 }}
+							disabled={!snapshot}
+							onClick={() => expandOneLevel()}
+						>
+							展开一层
+						</button>
+						<button
+							style={{ ...buttonStyle, padding: '4px 8px', fontSize: 12 }}
+							disabled={!snapshot}
+							onClick={() => expandAll()}
+						>
+							全部展开
+						</button>
+					</div>
 					{snapshot ? (
 						treeRootIds.map((id) => renderNode(id, 0))
 					) : (
