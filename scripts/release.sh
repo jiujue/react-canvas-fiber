@@ -77,6 +77,9 @@ if [[ -z $(git status -s) ]]; then
   exit 0
 fi
 
+echo -e "${YELLOW}🧾 Generating release notes...${NC}"
+node ./scripts/generate-release-notes.mjs
+
 # 5. Commit Version Bump
 echo -e "${YELLOW}💾 Committing version bump...${NC}"
 git add .
