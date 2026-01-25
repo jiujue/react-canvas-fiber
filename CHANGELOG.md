@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.7
+
+### Patch Changes
+
+- 68d0cbc: docs(core): update docs
+
 ## 2.0.6
 
 ### Patch Changes
