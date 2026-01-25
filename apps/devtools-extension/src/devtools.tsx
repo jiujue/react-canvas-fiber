@@ -1,5 +1,5 @@
-import panelHtml from 'url:./panels/react-canvas-fiber/index.html'
-import bootstrapScriptUrl from 'url:./panels/react-canvas-fiber/bootstrap'
+import panelHtml from 'url:./panels/canvas-renderer/index.html'
+import bootstrapScriptUrl from 'url:./panels/canvas-renderer/bootstrap'
 
 const parsePanelPagePath = (urlOrPath: string) => {
 	try {
