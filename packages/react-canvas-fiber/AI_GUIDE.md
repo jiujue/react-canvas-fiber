@@ -47,6 +47,14 @@ function App() {
 }
 ```
 
+- **Props**: `CanvasProps`
+- **Key Attributes**:
+  - `width`, `height`: Logical size (number).
+  - `dpr`: Device pixel ratio (default 1).
+  - `clearColor`: Frame clear color string.
+  - `style`: CSS properties for the DOM canvas element.
+  - `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`: Default text styles.
+
 ### Intrinsic Elements
 
 #### `<View />`
@@ -57,11 +65,26 @@ Container element for layout and grouping.
 - **Key Attributes**:
   - `style`: `YogaStyle` (flex, padding, margin, position, etc.)
   - `background`: Background color string.
+  - `border`: Border string (e.g., `"1px solid red"`).
   - `borderRadius`: Number.
   - `scrollX`, `scrollY`: Booleans to enable scrolling.
+  - `scrollbarX`, `scrollbarY`: Booleans to show/hide scrollbars (default `true` if scrolling enabled).
+  - `scrollbarWidth`, `scrollbarInset`: Number (custom scrollbar appearance).
+  - `scrollbarTrackColor`, `scrollbarThumbColor`: Color strings.
   - `onScroll`, `onScrollX`: Scroll callbacks.
   - `pointerEvents`: `'auto' | 'none'`.
   - Event handlers: `onClick`, `onPointerDown`, etc.
+
+#### `<Image />`
+
+Image primitive.
+
+- **Props**: `ImageProps`
+- **Key Attributes**:
+  - `src`: **Mandatory** string (URL).
+  - `style`: `YogaStyle`.
+  - `objectFit`: `'cover' | 'contain' | 'fill'` (default `contain`).
+  - `borderRadius`: Number.
 
 #### `<Text />`
 

@@ -2,89 +2,110 @@
 
 [中文版](./docs/README.zh.md)
 
-An experiment inspired by react-three-fiber: implement a custom React Renderer for `<canvas>`. Use JSX to declare a primitive tree, let React handle diffing, let the renderer maintain a scene graph, and run `layout -> draw` after each commit to render onto `<canvas>`.
+**A high-performance React custom renderer for HTML5 Canvas, integrated with Yoga Layout for Flexbox support.**
 
-## Monorepo Layout
+> Inspired by react-three-fiber, this project brings the declarative power of React and the layout capabilities of CSS Flexbox to the Canvas 2D context.
 
-- Core library (publishable package): [packages/react-canvas-fiber](./packages/react-canvas-fiber)
-- Demo app (Vite + React): [apps/demo](./apps/demo)
-- Docs site (dumi): [apps/dumi-docs](./apps/dumi-docs)
-- DevTools extension (Chrome): [apps/devtools-extension](./apps/devtools-extension)
+**Keywords**: react, canvas, renderer, fiber, yoga, layout, flexbox, 2d, ui, graphics
 
-## Documentation
+## ✨ Features
 
-- Docs site source: [apps/dumi-docs/docs](./apps/dumi-docs/docs)
-- DevTools guide: [devtools.md](./apps/dumi-docs/docs/guide/devtools.md)
-- Architecture notes: [ARCHITECTURE.md](./docs/ARCHITECTURE.md) ([English](./docs/ARCHITECTURE.en.md))
+- **React Declarative UI**: Use standard JSX to build Canvas scenes.
+- **Flexbox Layout**: Full layout system powered by [Yoga](https://yogalayout.com/) (supports `flex`, `padding`, `margin`, `gap`, etc.).
+- **High Performance**: Batched updates via `requestAnimationFrame`, rendering only when necessary.
+- **Event System**: DOM-like event bubbling and capturing (`onClick`, `onPointerOver`, etc.).
+- **Developer Experience**: Dedicated Chrome DevTools extension for inspecting the scene graph.
 
-## Quick Start
-
-Prerequisites: Node.js + pnpm
-
-```bash
-pnpm install
-pnpm dev
-```
-
-Build all workspaces (core library + demo):
-
-```bash
-pnpm build
-```
-
-Run docs site locally:
-
-```bash
-pnpm -C apps/dumi-docs dev
-```
-
-## DevTools Panel
-
-A Chrome DevTools panel is provided for inspecting the scene tree / node highlighting / props inspection:
-
-- Docs: [apps/dumi-docs/docs/guide/devtools.md](./apps/dumi-docs/docs/guide/devtools.md)
-- Extension project: `apps/devtools-extension`
-
-## Using the Core Library
-
-The core package name is `@jiujue/react-canvas-fiber`. The demo consumes it via a workspace dependency:
-
-Install from npm (once published):
+## 📦 Installation
 
 ```bash
 pnpm add @jiujue/react-canvas-fiber
 ```
 
+> **Note**: This renderer requires **React 18**.
+
+## 🚀 Usage
+
 ```tsx
 import { Canvas, Image, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
-export function Example() {
+export function App() {
 	return (
-		<Canvas width={600} height={400} dpr={devicePixelRatio} clearColor="#0b1020">
-			<View style={{ width: 600, height: 400, padding: 16, flexDirection: 'column', gap: 12 }}>
-				<Text
-					text="Hello Canvas Renderer"
-					style={{ fontSize: 24, fontWeight: 700 }}
-					color="#e6edf7"
-				/>
+		<Canvas
+			width={800}
+			height={600}
+			style={{ border: '1px solid #ccc' }}
+			dpr={window.devicePixelRatio}
+		>
+			<View
+				style={{
+					flex: 1,
+					justifyContent: 'center',
+					alignItems: 'center',
+					gap: 20,
+					background: '#0b1020',
+				}}
+			>
+				<Text text="Hello Canvas!" style={{ fontSize: 32, fontWeight: 'bold' }} color="#e6edf7" />
+				<Rect style={{ width: 100, height: 100 }} fill="#2b6cff" borderRadius={12} />
 				<Image
-					src="https://gw.alipayobjects.com/zos/antfincdn/LlvErxo8H9/photo-1503149779833-1de50ebe5f8a.webp"
-					style={{ width: 100, height: 100 }}
-					borderRadius={12}
+					src="https://example.com/image.png"
+					style={{ width: 80, height: 80 }}
 					objectFit="cover"
+					borderRadius={40}
 				/>
-				<Rect style={{ width: 180, height: 44 }} borderRadius={10} fill="#2b6cff" />
 			</View>
 		</Canvas>
 	)
 }
 ```
 
-## Architecture Overview
+## 🛠 Local Development
 
-[Architecture Overview](./docs/ARCHITECTURE.md)
+This is a monorepo managed by **pnpm**.
 
-### Render Pipeline
+**Prerequisites**: Node.js + pnpm
+
+1. **Install dependencies**
+
+   ```bash
+   pnpm install
+   ```
+
+2. **Start Demo App**
+
+   ```bash
+   pnpm dev
+   ```
+
+3. **Build All Packages**
+
+   ```bash
+   pnpm build
+   ```
+
+4. **Start Documentation Site**
+   ```bash
+   pnpm -C apps/dumi-docs dev
+   ```
+
+## 📂 Monorepo Structure
+
+- **`packages/react-canvas-fiber`**: Core library ([README](./packages/react-canvas-fiber/README.md)).
+- **`apps/demo`**: Vite + React demo application showcasing features.
+- **`apps/dumi-docs`**: Documentation site (Dumi).
+- **`apps/devtools-extension`**: Chrome DevTools extension source code.
+
+## 📖 Documentation
+
+- **Core Components**: [Canvas](./packages/react-canvas-fiber/README.md#canvas), [View](./packages/react-canvas-fiber/README.md#view), [Text](./packages/react-canvas-fiber/README.md#text), [Image](./packages/react-canvas-fiber/README.md#image), [Rect](./packages/react-canvas-fiber/README.md#rect)
+- **Architecture Overview**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- **DevTools Guide**: [DevTools](./apps/dumi-docs/docs/guide/devtools.md)
+- **Contribution Guide**: [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+## 🏗 Architecture
+
+The renderer follows a pipeline similar to other React custom renderers:
 
 ```mermaid
 graph LR
@@ -95,28 +116,15 @@ graph LR
   E --> F[Draw Pass - Canvas2D]
 ```
 
-### Key Modules
+1. **Reconciliation**: React diffs the Virtual DOM and calls HostConfig methods.
+2. **Scene Graph**: A lightweight tree structure (`View`, `Text`, `Rect`) is maintained.
+3. **Layout**: Yoga calculates layout (x, y, width, height) for the entire tree.
+4. **Draw**: The tree is traversed to draw elements onto the 2D Context.
 
-- Scene graph and node structure: `packages/react-canvas-fiber/src/runtime/nodes.ts`
-- Reconciler HostConfig: `packages/react-canvas-fiber/src/runtime/reconciler.ts`
-- Yoga style mapping and layout pass: `packages/react-canvas-fiber/src/layout/layoutTree.ts`
-- Canvas2D drawing: `packages/react-canvas-fiber/src/render/drawTree.ts`
-- React DOM bridge component `<Canvas/>`: `packages/react-canvas-fiber/src/components/Canvas.tsx`
+## 🤝 Contributing
 
-## Design Goals (v1)
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
 
-- Support JSX nodes like `View/Rect/Text`, and re-render after React diffs
-- Support a subset of Yoga Flexbox layout: width/height, flexDirection, justifyContent, alignItems, padding/margin, position, gap
-- Batch updates with `requestAnimationFrame`: multiple updates within one commit render only one frame
-
-## Notes
-
-- The current implementation is a “minimum viable skeleton”. Both drawing and layout are intentionally a subset, making it easier to extend later (e.g., Group/Transform, more primitives, event system, useFrame, etc.).
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## License
+## 📄 License
 
 MIT. See [LICENSE](./LICENSE).

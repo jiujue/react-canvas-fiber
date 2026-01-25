@@ -2,81 +2,110 @@
 
 [English Version](../README.md)
 
-参考 react-three-fiber 的思路实现一个 Canvas 自定义 React Renderer：用 JSX 声明图元树，React 负责 diff，renderer 维护 scene graph，并在每次提交后执行 `layout -> draw` 渲染到 `<canvas>`。
+**基于 HTML5 Canvas 的高性能 React 自定义渲染器，集成 Yoga Layout 以支持 Flexbox 布局。**
 
-## 目录结构
+> 受 react-three-fiber 启发，本项目将 React 的声明式能力和 CSS Flexbox 的布局能力带入了 Canvas 2D 上下文。
 
-- 核心库（可打包分发）：[packages/react-canvas-fiber](../packages/react-canvas-fiber)
-- Demo 应用（Vite + React）：[apps/demo](../apps/demo)
-- 文档站点（dumi）：[apps/dumi-docs](../apps/dumi-docs)
-- DevTools 扩展（Chrome）：[apps/devtools-extension](../apps/devtools-extension)
+**关键词**: react, canvas, renderer, fiber, yoga, layout, flexbox, 2d, ui, graphics
 
-## 文档
+## ✨ 特性
 
-- 文档站点源码：[apps/dumi-docs/docs](../apps/dumi-docs/docs)
-- DevTools 指南：[devtools.md](../apps/dumi-docs/docs/guide/devtools.md)
-- 架构说明：[ARCHITECTURE.md](./ARCHITECTURE.md)（[English](./ARCHITECTURE.en.md)）
+- **React 声明式 UI**: 使用标准的 JSX 编写 Canvas 场景。
+- **Flexbox 布局**: 由 [Yoga](https://yogalayout.com/) 驱动的完整布局系统（支持 `flex`, `padding`, `margin`, `gap` 等）。
+- **高性能**: 基于 `requestAnimationFrame` 的批量更新，仅在必要时重绘。
+- **事件系统**: 类 DOM 的事件冒泡与捕获机制（支持 `onClick`, `onPointerOver` 等）。
+- **开发体验**: 提供专属的 Chrome DevTools 扩展，用于调试场景图。
 
-## 快速开始
-
-前置：Node.js + pnpm
-
-```bash
-pnpm install
-pnpm dev
-```
-
-构建全部工作区（核心库 + demo）：
-
-```bash
-pnpm build
-```
-
-本地启动文档站点：
-
-```bash
-pnpm -C apps/dumi-docs dev
-```
-
-## DevTools 面板
-
-提供一个 Chrome DevTools 面板用于查看场景树/节点高亮/属性检查：
-
-- 文档：[apps/dumi-docs/docs/guide/devtools.md](../apps/dumi-docs/docs/guide/devtools.md)
-- 扩展工程：`apps/devtools-extension`
-
-## 使用核心库
-
-核心包名为 `@jiujue/react-canvas-fiber`，demo 里就是以工作区依赖的方式使用它：
-
-发布到 npm 后可直接安装：
+## 📦 安装
 
 ```bash
 pnpm add @jiujue/react-canvas-fiber
 ```
 
-```tsx
-import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
+> **注意**: 本渲染器需要 **React 18**。
 
-export function Example() {
+## 🚀 使用
+
+```tsx
+import { Canvas, Image, Rect, Text, View } from '@jiujue/react-canvas-fiber'
+
+export function App() {
 	return (
-		<Canvas width={600} height={400} dpr={devicePixelRatio} clearColor="#0b1020">
-			<View style={{ width: 600, height: 400, padding: 16, flexDirection: 'column', gap: 12 }}>
-				<Text
-					text="Hello Canvas Renderer"
-					style={{ fontSize: 24, fontWeight: 700 }}
-					color="#e6edf7"
+		<Canvas
+			width={800}
+			height={600}
+			style={{ border: '1px solid #ccc' }}
+			dpr={window.devicePixelRatio}
+		>
+			<View
+				style={{
+					flex: 1,
+					justifyContent: 'center',
+					alignItems: 'center',
+					gap: 20,
+					background: '#0b1020',
+				}}
+			>
+				<Text text="Hello Canvas!" style={{ fontSize: 32, fontWeight: 'bold' }} color="#e6edf7" />
+				<Rect style={{ width: 100, height: 100 }} fill="#2b6cff" borderRadius={12} />
+				<Image
+					src="https://example.com/image.png"
+					style={{ width: 80, height: 80 }}
+					objectFit="cover"
+					borderRadius={40}
 				/>
-				<Rect style={{ width: 180, height: 44 }} borderRadius={10} fill="#2b6cff" />
 			</View>
 		</Canvas>
 	)
 }
 ```
 
-## 架构概览
+## 🛠 本地开发
 
-### 渲染管线
+本项目是一个基于 **pnpm** 的 Monorepo。
+
+**前置要求**: Node.js + pnpm
+
+1. **安装依赖**
+
+   ```bash
+   pnpm install
+   ```
+
+2. **启动 Demo 应用**
+
+   ```bash
+   pnpm dev
+   ```
+
+3. **构建所有包**
+
+   ```bash
+   pnpm build
+   ```
+
+4. **启动文档站点**
+   ```bash
+   pnpm -C apps/dumi-docs dev
+   ```
+
+## 📂 仓库结构
+
+- **`packages/react-canvas-fiber`**: 核心库 ([README](../packages/react-canvas-fiber/README.zh.md))。
+- **`apps/demo`**: Vite + React 示例应用，展示功能。
+- **`apps/dumi-docs`**: 文档站点 (Dumi)。
+- **`apps/devtools-extension`**: Chrome DevTools 扩展源码。
+
+## 📖 文档
+
+- **核心组件**: [Canvas](../packages/react-canvas-fiber/README.zh.md#canvas), [View](../packages/react-canvas-fiber/README.zh.md#view), [Text](../packages/react-canvas-fiber/README.zh.md#text), [Image](../packages/react-canvas-fiber/README.zh.md#image), [Rect](../packages/react-canvas-fiber/README.zh.md#rect)
+- **架构概览**: [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **DevTools 指南**: [DevTools](../apps/dumi-docs/docs/guide/devtools.md)
+- **贡献指南**: [CONTRIBUTING.md](../CONTRIBUTING.md)
+
+## 🏗 架构
+
+渲染器遵循与其他 React 自定义渲染器类似的流水线：
 
 ```mermaid
 graph LR
@@ -87,28 +116,15 @@ graph LR
   E --> F[Draw Pass - Canvas2D]
 ```
 
-### 关键模块
+1. **协调 (Reconciliation)**: React diff 虚拟 DOM 并调用 HostConfig 方法。
+2. **场景图 (Scene Graph)**: 维护一个轻量级的树结构（`View`, `Text`, `Rect`）。
+3. **布局 (Layout)**: Yoga 计算整棵树的布局（x, y, width, height）。
+4. **绘制 (Draw)**: 遍历树结构，将元素绘制到 2D 上下文中。
 
-- 场景树与节点结构：`packages/react-canvas-fiber/src/runtime/nodes.ts`
-- reconciler HostConfig：`packages/react-canvas-fiber/src/runtime/reconciler.ts`
-- Yoga style 映射与 layout pass：`packages/react-canvas-fiber/src/layout/layoutTree.ts`
-- Canvas2D 绘制：`packages/react-canvas-fiber/src/render/drawTree.ts`
-- React DOM 桥接组件 `<Canvas/>`：`packages/react-canvas-fiber/src/components/Canvas.tsx`
+## 🤝 参与贡献
 
-## 设计目标（第一版）
+欢迎贡献代码！在提交 Pull Request 之前，请先阅读 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
-- 支持 `View/Rect/Text` 这类 JSX 节点，React diff 后能触发重绘
-- 支持 Yoga Flexbox 子集布局：宽高、flexDirection、justifyContent、alignItems、padding/margin、position、gap
-- 使用 `requestAnimationFrame` 合帧：一次提交内多次更新只渲染一帧
+## 📄 许可证
 
-## 说明
-
-- 当前实现是“最小可用骨架”，绘制能力与布局能力都是子集，便于后续扩展（例如 Group/Transform、更多图元、事件系统、useFrame 等）。
-
-## 参与贡献
-
-见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
-
-## License
-
-MIT，见 [LICENSE](../LICENSE)。
+MIT. 详见 [LICENSE](../LICENSE)。

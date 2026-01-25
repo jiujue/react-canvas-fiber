@@ -4,6 +4,8 @@
 
 基于 `react-reconciler` 的 Canvas 自定义渲染器（2D），并集成 Yoga Flexbox 布局。
 
+**关键词**: react, canvas, renderer, fiber, yoga, layout, flexbox, 2d, ui, graphics
+
 ## 安装
 
 发布到 npm 后可直接安装：

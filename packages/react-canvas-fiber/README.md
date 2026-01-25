@@ -4,6 +4,8 @@
 
 A Canvas custom renderer (2D) based on `react-reconciler`, integrated with Yoga Flexbox layout.
 
+**Keywords**: react, canvas, renderer, fiber, yoga, layout, flexbox, 2d, ui, graphics
+
 ## Installation
 
 Once published to npm, you can install it directly:

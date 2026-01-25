@@ -4,6 +4,21 @@
 	"version": "1.1.10",
 	"type": "module",
 	"license": "MIT",
+	"description": "A React custom renderer for Canvas2D with Yoga layout",
+	"keywords": [
+		"react",
+		"canvas",
+		"renderer",
+		"fiber",
+		"yoga",
+		"layout",
+		"flexbox",
+		"2d",
+		"ui",
+		"react-reconciler",
+		"custom-renderer",
+		"graphics"
+	],
 	"scripts": {
 		"dev": "pnpm -C apps/demo dev",
 		"build": "pnpm -r build",
