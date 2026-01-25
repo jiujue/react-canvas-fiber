@@ -6,7 +6,7 @@ const setMarker = (next: string) => {
 const evalInInspectedWindow = async <T,>(expression: string): Promise<T> => {
 	return await new Promise((resolve, reject) => {
 		chrome.devtools.inspectedWindow.eval(expression, (result: unknown, exceptionInfo: any) => {
-			if (exceptionInfo) {
+			if (exceptionInfo?.isException) {
 				reject(new Error(exceptionInfo.value ?? exceptionInfo.description ?? 'Eval failed'))
 				return
 			}
@@ -85,4 +85,3 @@ if (document.readyState === 'loading') {
 } else {
 	bootstrap()
 }
-

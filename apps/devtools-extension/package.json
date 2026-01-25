@@ -22,7 +22,10 @@
 					"devtools.html",
 					"devtools*.js",
 					"react-canvas-fiber*.html",
-					"react-canvas-fiber*.js"
+					"react-canvas-fiber*.js",
+					"canvas-renderer*.html",
+					"canvas-renderer*.js",
+					"bootstrap*.js"
 				]
 			}
 		]

@@ -24,12 +24,15 @@ const appendError = (label: string, value: unknown) => {
 	el.textContent = (el.textContent ? `${el.textContent}\n\n` : '') + `${label}\n${msg}`
 }
 
-const parsePath = (urlOrPath: string) => {
+const toAssetName = (urlOrPath: string) => {
 	try {
 		const u = new URL(urlOrPath)
-		return u.pathname.replace(/^\//, '')
+		const parts = u.pathname.split('/').filter(Boolean)
+		return parts[parts.length - 1] ?? u.pathname.replace(/^\//, '')
 	} catch {
-		return urlOrPath.replace(/^\//, '')
+		const s = urlOrPath.replace(/^\//, '')
+		const parts = s.split('/').filter(Boolean)
+		return parts[parts.length - 1] ?? s
 	}
 }
 
@@ -59,7 +62,8 @@ const bootstrap = async () => {
 	})
 
 	try {
-		const abs = chrome.runtime.getURL(parsePath(fullPanelScriptUrl))
+		const assetName = toAssetName(fullPanelScriptUrl)
+		const abs = chrome.runtime.getURL(assetName)
 		await loadScript(abs)
 		setTimeout(() => {
 			const ready = !!(globalThis as any).__RCF_DEVTOOLS_REACT_ROOT__
@@ -78,4 +82,3 @@ if (document.readyState === 'loading') {
 } else {
 	void bootstrap()
 }
-
