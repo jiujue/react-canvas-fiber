@@ -22,7 +22,8 @@
 	"sideEffects": false,
 	"files": [
 		"dist",
-		"AI_GUIDE.md"
+		"AI_GUIDE.md",
+		"SKILL.md"
 	],
 	"repository": {
 		"type": "git",
