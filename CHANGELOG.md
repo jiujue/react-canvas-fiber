@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.8
+
+### Patch Changes
+
+- a9d59e2: add skills example
+
 ## 2.0.7
 
 ### Patch Changes

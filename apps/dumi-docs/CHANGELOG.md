@@ -1,5 +1,12 @@
 # react-canvas-fiber-docs
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [a9d59e2]
+  - @jiujue/react-canvas-fiber@2.0.8
+
 ## 0.0.8
 
 ### Patch Changes
