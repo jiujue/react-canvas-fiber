@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.1
+
+### Patch Changes
+
+- 2558224: docs: update homepage
+
 ## 2.0.8
 
 ### Patch Changes
