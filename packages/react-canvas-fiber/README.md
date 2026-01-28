@@ -18,6 +18,11 @@ pnpm add @jiujue/react-canvas-fiber
 
 Inside this monorepo, it is referenced via pnpm workspace (see the demo).
 
+## 📖 Development & AI Guides
+
+- [AI Guide](./AI_GUIDE.md) - A comprehensive guide for AI agents to understand, use, and extend this project.
+- [Skill Manual](./SKILL.md) - A manual for users and AI to quickly master the usage and troubleshooting of this renderer.
+
 ## Usage
 
 ```tsx

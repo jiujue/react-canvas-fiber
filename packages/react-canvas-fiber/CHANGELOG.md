@@ -1,5 +1,11 @@
 # @jiujue/react-canvas-fiber
 
+## 2.1.0
+
+### Minor Changes
+
+- update readme
+
 ## 2.0.8
 
 ### Patch Changes

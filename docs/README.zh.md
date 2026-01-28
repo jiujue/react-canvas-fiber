@@ -98,6 +98,10 @@ export function App() {
 
 ## 📖 文档
 
+- **[AI 指南](../packages/react-canvas-fiber/AI_GUIDE.md)**: 供 AI Agent 理解、使用和扩展本项目的全面指南。
+- **[使用手册 (Skill)](../packages/react-canvas-fiber/SKILL.md)**: 供使用者和 AI 快速上手及排查问题的手册。
+- [架构设计指南](./ARCHITECTURE.md): 深入了解内部设计和渲染流水线。
+
 - **核心组件**: [Canvas](../packages/react-canvas-fiber/README.zh.md#canvas), [View](../packages/react-canvas-fiber/README.zh.md#view), [Text](../packages/react-canvas-fiber/README.zh.md#text), [Image](../packages/react-canvas-fiber/README.zh.md#image), [Rect](../packages/react-canvas-fiber/README.zh.md#rect)
 - **架构概览**: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - **DevTools 指南**: [DevTools](../apps/dumi-docs/docs/guide/devtools.md)

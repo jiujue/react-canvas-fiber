@@ -98,6 +98,10 @@ This is a monorepo managed by **pnpm**.
 
 ## 📖 Documentation
 
+- **[AI Guide](./packages/react-canvas-fiber/AI_GUIDE.md)**: A comprehensive guide for AI agents to understand, use, and extend this project.
+- **[Skill Manual](./packages/react-canvas-fiber/SKILL.md)**: A manual for users and AI to quickly master the usage and troubleshooting.
+- [Architecture Guide](./docs/ARCHITECTURE.md): Deep dive into the internal design and rendering pipeline.
+
 - **Core Components**: [Canvas](./packages/react-canvas-fiber/README.md#canvas), [View](./packages/react-canvas-fiber/README.md#view), [Text](./packages/react-canvas-fiber/README.md#text), [Image](./packages/react-canvas-fiber/README.md#image), [Rect](./packages/react-canvas-fiber/README.md#rect)
 - **Architecture Overview**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - **DevTools Guide**: [DevTools](./apps/dumi-docs/docs/guide/devtools.md)

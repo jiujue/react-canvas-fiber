@@ -18,6 +18,11 @@ pnpm add @jiujue/react-canvas-fiber
 
 本仓库内通过 pnpm workspace 引用（见 demo）。
 
+## 📖 开发与使用指南
+
+- [AI 指南](./AI_GUIDE.md) - 供 AI Agent 理解、使用和扩展本项目的全面指南。
+- [使用手册 (Skill)](./SKILL.md) - 供使用者和 AI 快速上手及排查问题的手册。
+
 ## 使用
 
 ```tsx

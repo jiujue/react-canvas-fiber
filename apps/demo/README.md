@@ -20,3 +20,8 @@ pnpm -C apps/demo dev
 ## 示例入口
 
 - [App.tsx](./src/App.tsx)
+
+## 📖 相关指南
+
+- [AI 指南](../../packages/react-canvas-fiber/AI_GUIDE.md)
+- [使用手册 (Skill)](../../packages/react-canvas-fiber/SKILL.md)
