@@ -30,6 +30,7 @@
 		"url": "https://github.com/jiujue/react-canvas-fiber",
 		"directory": "packages/react-canvas-fiber"
 	},
+	"homepage": "https://jiujue.github.io/react-canvas-fiber/",
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
