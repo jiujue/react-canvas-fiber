@@ -1,5 +1,11 @@
 # @jiujue/react-canvas-fiber
 
+## 2.1.2
+
+### Patch Changes
+
+- 03cacfa: feat(core): view cnp add backimg props
+
 ## 2.1.1
 
 ### Patch Changes
