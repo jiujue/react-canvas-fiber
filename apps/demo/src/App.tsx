@@ -4,9 +4,10 @@ import FeatureDemo from './demos/FeatureDemo'
 import PerfDemo from './demos/PerfDemo'
 import TreeSelectDemo from './demos/TreeSelectDemo'
 import ScrollCullingDemo from './demos/ScrollCullingDemo'
+import BackgroundDemo from './demos/BackgroundDemo'
 
 export default function App() {
-	const [mode, setMode] = useState<'scroll' | 'cull' | 'feature' | 'perf' | 'tree'>('scroll')
+	const [mode, setMode] = useState<'scroll' | 'cull' | 'feature' | 'perf' | 'tree' | 'bg'>('bg')
 
 	return (
 		<div style={{ padding: 16, fontFamily: 'system-ui' }}>
@@ -81,6 +82,20 @@ export default function App() {
 				>
 					Tree Select
 				</button>
+				<button
+					type="button"
+					onClick={() => setMode('bg')}
+					style={{
+						padding: '6px 10px',
+						borderRadius: 8,
+						border: '1px solid rgba(0,0,0,0.15)',
+						background: mode === 'bg' ? '#111827' : '#ffffff',
+						color: mode === 'bg' ? '#ffffff' : '#111827',
+						cursor: 'pointer',
+					}}
+				>
+					Background
+				</button>
 				<span style={{ color: 'rgba(17,24,39,0.7)', fontSize: 12 }}>
 					{mode === 'scroll'
 						? '滚动条 & 布局示例'
@@ -90,7 +105,9 @@ export default function App() {
 								? 'Image & Hover 示例'
 								: mode === 'perf'
 									? '大量节点 + 动画压力测试'
-									: 'HTML Input + Canvas Tree 下拉选择'}
+									: mode === 'bg'
+										? 'Background Image Demo'
+										: 'HTML Input + Canvas Tree 下拉选择'}
 				</span>
 			</div>
 
@@ -99,6 +116,7 @@ export default function App() {
 			{mode === 'feature' && <FeatureDemo />}
 			{mode === 'perf' && <PerfDemo />}
 			{mode === 'tree' && <TreeSelectDemo />}
+			{mode === 'bg' && <BackgroundDemo />}
 		</div>
 	)
 }

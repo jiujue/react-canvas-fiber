@@ -52,7 +52,9 @@ export type BaseNode<T extends NodeType, P> = {
 export type RootNode = BaseNode<'Root', Record<string, never>> & {
 	container?: CanvasContainer
 }
-export type ViewNode = BaseNode<'View', ViewProps>
+export type ViewNode = BaseNode<'View', ViewProps> & {
+	backgroundImageInstance: HTMLImageElement | null
+}
 export type RectNode = BaseNode<'Rect', RectProps>
 export type TextNode = BaseNode<'Text', TextProps>
 export type ImageNode = BaseNode<'Image', ImageProps> & {

@@ -59,6 +59,8 @@ export function createNode(type: Exclude<NodeType, 'Root'>, props: any): CanvasN
 
 	if (type === 'Image') {
 		;(node as any).imageInstance = null
+	} else if (type === 'View') {
+		;(node as any).backgroundImageInstance = null
 	}
 
 	return node

@@ -69,6 +69,10 @@ Common props:
 
 - `style?: YogaStyle`: layout box; see Layout section below
 - `background?: string`: background fill color
+- `backgroundImage?: string`: image URL
+- `backgroundSize?: string`: `cover` | `contain` | `auto` | `100px 50px` | `50% 50%`
+- `backgroundPosition?: string`: `center` | `top left` | `10px 20px` | `50% 50%`
+- `backgroundRepeat?: string`: `repeat` | `no-repeat` | `repeat-x` | `repeat-y`
 - `border?: string`: CSS-like border. Supported forms:
   - `"<number>px solid <color>"` (e.g. `1px solid rgba(255,255,255,0.2)`)
   - `"<number> <color>"` (e.g. `2 #fff`)

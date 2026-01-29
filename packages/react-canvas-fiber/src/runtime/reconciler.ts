@@ -49,6 +49,18 @@ const hostConfig: any = {
 			if (!img.complete) {
 				img.onload = () => rootContainer.invalidate()
 			}
+		} else if (type === 'View' && props.backgroundImage) {
+			const viewNode = node as unknown as import('./nodes').ViewNode
+			const img = new Image()
+			img.crossOrigin = 'anonymous'
+			img.src = props.backgroundImage
+			if (img.dataset) {
+				img.dataset.src = props.backgroundImage
+			}
+			viewNode.backgroundImageInstance = img
+			if (!img.complete) {
+				img.onload = () => rootContainer.invalidate()
+			}
 		}
 		return node
 	},
@@ -131,6 +143,41 @@ const hostConfig: any = {
 
 					const invalidate = () => {
 						let p: any = imgNode
+						while (p) {
+							if (p.type === 'Root') {
+								p.container?.invalidate()
+								return
+							}
+							p = p.parent
+						}
+					}
+
+					if (!img.complete) {
+						img.onload = invalidate
+					} else {
+						invalidate()
+					}
+				}
+			}
+		} else if (instance.type === 'View') {
+			const viewNode = instance as unknown as import('./nodes').ViewNode
+			const newBg = (instance.props as any).backgroundImage
+			const currentBg = viewNode.backgroundImageInstance?.dataset?.src
+
+			if (newBg !== currentBg) {
+				if (!newBg) {
+					viewNode.backgroundImageInstance = null
+				} else {
+					const img = new Image()
+					img.crossOrigin = 'anonymous'
+					img.src = newBg
+					if (img.dataset) {
+						img.dataset.src = newBg
+					}
+					viewNode.backgroundImageInstance = img
+
+					const invalidate = () => {
+						let p: any = viewNode
 						while (p) {
 							if (p.type === 'Root') {
 								p.container?.invalidate()

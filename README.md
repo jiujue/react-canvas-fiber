@@ -98,8 +98,30 @@ This is a monorepo managed by **pnpm**.
 
 ## 📖 Documentation
 
-- **[AI Guide](./packages/react-canvas-fiber/AI_GUIDE.md)**: A comprehensive guide for AI agents to understand, use, and extend this project.
-- **[Skill Manual](./packages/react-canvas-fiber/SKILL.md)**: A manual for users and AI to quickly master the usage and troubleshooting.
+- **Core Documentation**: [packages/react-canvas-fiber/README.md](./packages/react-canvas-fiber/README.md)
+- **AI Guide**: [packages/react-canvas-fiber/AI_GUIDE.md](./packages/react-canvas-fiber/AI_GUIDE.md)
+- **Skill Manual**: [packages/react-canvas-fiber/SKILL.md](./packages/react-canvas-fiber/SKILL.md)
+- **Component Docs**: Run `pnpm -C apps/dumi-docs dev` to view full interactive documentation.
+
+## 📝 Documentation Guidelines
+
+To maintain consistency between code and documentation, strict adherence to the following rules is required when contributing:
+
+1.  **New Components**:
+    - MUST create a new markdown file in `apps/dumi-docs/docs/components/<component-name>.md`.
+    - MUST include usage examples, props table, and a live preview demo.
+
+2.  **New Attributes/Props**:
+    - MUST update the corresponding component documentation in `apps/dumi-docs/docs/components/`.
+    - MUST update the **Props** section in `packages/react-canvas-fiber/README.md` (for core primitives).
+    - MUST ensure type definitions in `src/types/jsx.ts` match the documentation.
+
+3.  **AI & Skills**:
+    - When adding new capabilities or architectural changes, update `packages/react-canvas-fiber/AI_GUIDE.md`.
+    - When adding new maintenance tools or scripts, update `packages/react-canvas-fiber/SKILL.md`.
+
+**Note**: Any PR adding features without corresponding documentation updates will be requested for changes.
+
 - [Architecture Guide](./docs/ARCHITECTURE.md): Deep dive into the internal design and rendering pipeline.
 
 - **Core Components**: [Canvas](./packages/react-canvas-fiber/README.md#canvas), [View](./packages/react-canvas-fiber/README.md#view), [Text](./packages/react-canvas-fiber/README.md#text), [Image](./packages/react-canvas-fiber/README.md#image), [Rect](./packages/react-canvas-fiber/README.md#rect)

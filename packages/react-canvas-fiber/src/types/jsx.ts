@@ -83,6 +83,10 @@ export type ViewProps = {
 	children?: ReactNode
 	style?: YogaStyle
 	background?: string
+	backgroundImage?: string
+	backgroundPosition?: string
+	backgroundSize?: string
+	backgroundRepeat?: string
 	border?: string
 	borderRadius?: number
 	scrollX?: boolean

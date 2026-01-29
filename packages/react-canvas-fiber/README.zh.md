@@ -69,6 +69,10 @@ export function Example() {
 
 - `style?: YogaStyle`：布局样式，见下方「布局（Yoga 子集）」
 - `background?: string`：背景填充色
+- `backgroundImage?: string`：背景图片 URL
+- `backgroundSize?: string`：`cover` | `contain` | `auto` | `100px 50px` | `50% 50%`
+- `backgroundPosition?: string`：`center` | `top left` | `10px 20px` | `50% 50%`
+- `backgroundRepeat?: string`：`repeat` | `no-repeat` | `repeat-x` | `repeat-y`
 - `border?: string`：类似 CSS 的 border，支持：
   - `"<number>px solid <color>"`（例如 `1px solid rgba(255,255,255,0.2)`）
   - `"<number> <color>"`（例如 `2 #fff`）

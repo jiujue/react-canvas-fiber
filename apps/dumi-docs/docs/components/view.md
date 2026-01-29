@@ -74,10 +74,66 @@ export default function Demo() {
 }
 ```
 
+## Background Image
+
+`View` 支持类似 CSS 的背景图片设置。
+
+- `backgroundImage`: 图片 URL
+- `backgroundSize`: `cover` | `contain` | `auto` | `100px 50px` | `50% 50%`
+- `backgroundPosition`: `center` | `top left` | `10px 20px` | `50% 50%`
+- `backgroundRepeat`: `repeat` | `no-repeat` | `repeat-x` | `repeat-y`
+
+```tsx | preview
+import { Canvas, View, Text } from '@jiujue/react-canvas-fiber'
+
+export default function Demo() {
+	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+	const width = 720
+	const height = 360
+
+	return (
+		<Canvas width={width} height={height} dpr={dpr} clearColor="#0b1020">
+			<View style={{ width, height, padding: 18, flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+				<View
+					style={{ width: 200, height: 200 }}
+					borderRadius={16}
+					background="#222"
+					backgroundImage="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80"
+					backgroundSize="cover"
+					backgroundPosition="center"
+					border="2px solid rgba(255,255,255,0.2)"
+				>
+					<Text
+						text="Cover + Center"
+						style={{ fontSize: 16, fontWeight: 700, padding: 12 }}
+						color="#fff"
+					/>
+				</View>
+				<View
+					style={{ width: 200, height: 200 }}
+					borderRadius={16}
+					background="#222"
+					backgroundImage="https://gw.alipayobjects.com/zos/antfincdn/aPkFc8Sj7n/method-draw-image.svg"
+					backgroundSize="60px"
+					backgroundRepeat="repeat"
+					border="2px solid rgba(255,255,255,0.2)"
+				>
+					<Text text="Repeat" style={{ fontSize: 16, fontWeight: 700, padding: 12 }} color="#fff" />
+				</View>
+			</View>
+		</Canvas>
+	)
+}
+```
+
 ## Props 要点
 
-- `style?: YogaStyle`
-- `background?: string`
+- `style?: YogaStyle`: 布局样式
+- `background?: string`: 背景色
+- `backgroundImage?: string`: 图片 URL
+- `backgroundSize?: string`: `cover` | `contain` | `auto` | `100px 50px` | `50% 50%`
+- `backgroundPosition?: string`: `center` | `top left` | `10px 20px` | `50% 50%`
+- `backgroundRepeat?: string`: `repeat` | `no-repeat` | `repeat-x` | `repeat-y`
 - `border?: string`，例如 `1px solid rgba(255,255,255,0.2)`
 - `borderRadius?: number`
 - `scrollX/scrollY` 与滚动条相关属性

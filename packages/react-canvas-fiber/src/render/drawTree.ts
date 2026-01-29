@@ -136,6 +136,150 @@ function drawBorder(
 	ctx.restore()
 }
 
+function resolveBgRepeat(repeat: string | undefined): string {
+	if (!repeat) return 'repeat'
+	if (
+		repeat === 'no-repeat' ||
+		repeat === 'repeat-x' ||
+		repeat === 'repeat-y' ||
+		repeat === 'repeat'
+	)
+		return repeat
+	return 'repeat'
+}
+
+function parseBgSize(size: string | undefined, w: number, h: number, imgW: number, imgH: number) {
+	if (!size || size === 'auto') return { width: imgW, height: imgH }
+	if (size === 'cover') {
+		const scale = Math.max(w / imgW, h / imgH)
+		return { width: imgW * scale, height: imgH * scale }
+	}
+	if (size === 'contain') {
+		const scale = Math.min(w / imgW, h / imgH)
+		return { width: imgW * scale, height: imgH * scale }
+	}
+	const parts = size.trim().split(/\s+/)
+	let rw = imgW
+	let rh = imgH
+
+	// Width
+	if (parts[0]) {
+		if (parts[0].endsWith('%')) {
+			rw = (w * parseFloat(parts[0])) / 100
+		} else if (parts[0] !== 'auto') {
+			rw = parseFloat(parts[0])
+		}
+	}
+
+	// Height
+	if (parts[1]) {
+		if (parts[1].endsWith('%')) {
+			rh = (h * parseFloat(parts[1])) / 100
+		} else if (parts[1] !== 'auto') {
+			rh = parseFloat(parts[1])
+		}
+	} else {
+		// If height is missing, set to auto (maintain aspect ratio if width changed)
+		if (parts[0] !== 'auto') {
+			rh = imgH * (rw / imgW)
+		}
+	}
+	return { width: rw, height: rh }
+}
+
+function parseBgPos(
+	pos: string | undefined,
+	w: number,
+	h: number,
+	targetW: number,
+	targetH: number,
+) {
+	// Default 0% 0%
+	const parts = (pos || '').trim().split(/\s+/)
+	if (parts.length === 0 || (parts.length === 1 && !parts[0])) {
+		return { x: 0, y: 0 }
+	}
+
+	const xStr = parts[0]
+	let yStr = parts[1]
+
+	if (parts.length === 1) {
+		yStr = 'center'
+	}
+
+	function resolve(val: string, containerDim: number, imgDim: number) {
+		if (val === 'left' || val === 'top') return 0
+		if (val === 'right' || val === 'bottom') return containerDim - imgDim
+		if (val === 'center') return (containerDim - imgDim) / 2
+		if (val.endsWith('%')) {
+			return ((containerDim - imgDim) * parseFloat(val)) / 100
+		}
+		if (val.endsWith('px')) {
+			return parseFloat(val)
+		}
+		return parseFloat(val) || 0
+	}
+
+	return {
+		x: resolve(xStr, w, targetW),
+		y: resolve(yStr, h, targetH),
+	}
+}
+
+function drawBackgroundImage(
+	ctx: CanvasRenderingContext2D,
+	node: import('../runtime/nodes').ViewNode,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	radius: number,
+) {
+	const img = node.backgroundImageInstance
+	if (!img || !img.complete || img.naturalWidth === 0 || img.naturalHeight === 0) return
+
+	const props = node.props as any
+	const bgSize = props.backgroundSize
+	const bgPos = props.backgroundPosition
+	const bgRepeat = resolveBgRepeat(props.backgroundRepeat)
+
+	// Calculate target size
+	const imgW = img.naturalWidth
+	const imgH = img.naturalHeight
+
+	const { width: targetW, height: targetH } = parseBgSize(bgSize, w, h, imgW, imgH)
+	const { x: posX, y: posY } = parseBgPos(bgPos, w, h, targetW, targetH)
+
+	ctx.save()
+	// Clip to rounded rect
+	drawRoundedRect(ctx, x, y, w, h, radius)
+	ctx.clip()
+
+	if (bgRepeat === 'no-repeat') {
+		// Simple drawImage
+		ctx.drawImage(img, x + posX, y + posY, targetW, targetH)
+	} else {
+		// Use pattern
+		const pattern = ctx.createPattern(img, bgRepeat)
+		if (pattern) {
+			const matrix = new DOMMatrix()
+			const scaleX = targetW / imgW
+			const scaleY = targetH / imgH
+
+			matrix.translateSelf(x + posX, y + posY)
+			matrix.scaleSelf(scaleX, scaleY)
+
+			pattern.setTransform(matrix)
+
+			ctx.fillStyle = pattern
+			ctx.beginPath()
+			ctx.rect(x, y, w, h)
+			ctx.fill()
+		}
+	}
+	ctx.restore()
+}
+
 /**
  * 绘制单个节点及其子树。
  * offsetX/offsetY 为父节点累加的偏移，用于把 computed layout 转换成最终画布坐标。
@@ -176,6 +320,12 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 			drawRoundedRect(ctx, x, y, w, h, viewRadius)
 			ctx.fill()
 			ctx.restore()
+		}
+
+		// Background Image
+		const viewNode = node as unknown as import('../runtime/nodes').ViewNode
+		if (viewNode.backgroundImageInstance) {
+			drawBackgroundImage(ctx, viewNode, x, y, w, h, viewRadius)
 		}
 
 		if (scrollX || scrollY) {
