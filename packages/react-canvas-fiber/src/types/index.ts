@@ -1,10 +1,25 @@
 export type { CanvasProps } from './canvas'
 export type { LayoutEngine } from './layout'
-export type { CanvasNode, Layout, NodeType, RootNode, RectNode, TextNode, ViewNode, ImageNode } from './nodes'
+export type {
+	CanvasNode,
+	CircleNode,
+	ImageNode,
+	Layout,
+	LineNode,
+	NodeType,
+	PathNode,
+	RectNode,
+	RootNode,
+	TextNode,
+	ViewNode,
+} from './nodes'
 export type {
 	CanvasPointerEvent,
 	CanvasPointerEventHandler,
 	CanvasPointerEventType,
+	CircleProps,
+	LineProps,
+	PathProps,
 	PointerEventsMode,
 	RectProps,
 	TextProps,

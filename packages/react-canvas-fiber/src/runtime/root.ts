@@ -5,6 +5,8 @@ import { layoutTree } from '../layout'
 import { createReconcilerRoot } from './reconciler'
 import type { CanvasNode, RootNode } from './nodes'
 import type { CanvasPointerEventType, CanvasRootOptions, MeasureTextFn } from '../types'
+import { resolvePath2D } from '../utils'
+import { hitTestEllipse, hitTestLineSegment } from './hitTestPrimitives'
 
 /**
  * 创建自定义 renderer 的运行时 Root。
@@ -397,6 +399,40 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 			const child = node.children[i]
 			const hit = hitTestNode(child, x, y, childOffsetX, childOffsetY)
 			if (hit) return hit
+		}
+
+		if (node.type === 'Circle') {
+			const ok = hitTestEllipse(x, y, left, top, node.layout.width, node.layout.height)
+			if (!ok) return null
+		}
+
+		if (node.type === 'Line') {
+			const w = node.layout.width
+			const h = node.layout.height
+			const x1 = (node.props as any).x1 ?? 0
+			const y1 = (node.props as any).y1 ?? 0
+			const x2 = (node.props as any).x2 ?? w
+			const y2 = (node.props as any).y2 ?? h
+			const lineWidth = (node.props as any).lineWidth ?? 1
+			const threshold = Math.max(1, lineWidth / 2)
+			const ok = hitTestLineSegment(x, y, left + x1, top + y1, left + x2, top + y2, threshold)
+			if (!ok) return null
+		}
+
+		if (node.type === 'Path') {
+			const path = resolvePath2D(node as any)
+			if (!path) return null
+			const fillRule = (node.props as any).fillRule
+			const stroke = (node.props as any).stroke
+			const lineWidth = (node.props as any).lineWidth ?? 1
+			ctx.save()
+			ctx.setTransform(1, 0, 0, 1, 0, 0)
+			ctx.translate(left, top)
+			ctx.lineWidth = lineWidth
+			const inFill = ctx.isPointInPath(path as any, x, y, fillRule)
+			const inStroke = stroke ? ctx.isPointInStroke(path as any, x, y) : false
+			ctx.restore()
+			if (!inFill && !inStroke) return null
 		}
 
 		return node

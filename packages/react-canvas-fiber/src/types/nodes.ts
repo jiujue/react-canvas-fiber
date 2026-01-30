@@ -1,12 +1,20 @@
 import type { CanvasContainer } from './runtime'
-import type { ImageProps, RectProps, TextProps, ViewProps } from './jsx'
+import type {
+	CircleProps,
+	ImageProps,
+	LineProps,
+	PathProps,
+	RectProps,
+	TextProps,
+	ViewProps,
+} from './jsx'
 
 /**
  * 场景树节点类型集合。
  *
  * Root 只存在于容器层；View/Rect/Text 对应 JSX intrinsic elements。
  */
-export type NodeType = 'Root' | 'View' | 'Rect' | 'Text' | 'Image'
+export type NodeType = 'Root' | 'View' | 'Rect' | 'Circle' | 'Path' | 'Line' | 'Text' | 'Image'
 
 /**
  * 布局结果：由 Yoga 计算得到的最终位置与尺寸（相对父节点坐标系）。
@@ -56,9 +64,22 @@ export type ViewNode = BaseNode<'View', ViewProps> & {
 	backgroundImageInstance: HTMLImageElement | null
 }
 export type RectNode = BaseNode<'Rect', RectProps>
+export type CircleNode = BaseNode<'Circle', CircleProps>
+export type PathNode = BaseNode<'Path', PathProps> & {
+	path2d: Path2D | null
+	pathSource: string | null
+}
+export type LineNode = BaseNode<'Line', LineProps>
 export type TextNode = BaseNode<'Text', TextProps>
 export type ImageNode = BaseNode<'Image', ImageProps> & {
 	imageInstance: HTMLImageElement | null
 }
 
-export type CanvasNode = ViewNode | RectNode | TextNode | ImageNode
+export type CanvasNode =
+	| ViewNode
+	| RectNode
+	| CircleNode
+	| PathNode
+	| LineNode
+	| TextNode
+	| ImageNode

@@ -11,9 +11,22 @@ import { Canvas, Image, Text, View } from '@jiujue/react-canvas-fiber'
 
 export default function Demo() {
 	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-
 	const src =
-		'https://gw.alipayobjects.com/zos/antfincdn/LlvErxo8H9/photo-1503149779833-1de50ebe5f8a.webp'
+		'data:image/svg+xml;utf8,' +
+		encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <circle cx="256" cy="256" r="168" fill="rgba(0,0,0,0.22)"/>
+  <text x="256" y="252" text-anchor="middle" font-size="44" font-family="system-ui" fill="#ffffff" font-weight="700">Image</text>
+  <text x="256" y="304" text-anchor="middle" font-size="22" font-family="system-ui" fill="rgba(255,255,255,0.85)">CORS-safe demo</text>
+</svg>
+`)
 
 	return (
 		<Canvas width={720} height={400} dpr={dpr} clearColor="#0b1020">
@@ -54,6 +67,10 @@ export default function Demo() {
 	)
 }
 ```
+
+## 跨域注意事项（CORS）
+
+`Image` 内部会把 `HTMLImageElement.crossOrigin` 设为 `anonymous`，因此如果你使用跨域图片地址，目标服务器必须返回允许跨域访问的响应头（例如 `Access-Control-Allow-Origin: *` 或包含当前站点域名）。否则图片会加载失败，从而表现为“只显示文字，图片不出现”。
 
 ## Props
 

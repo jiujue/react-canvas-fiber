@@ -9,15 +9,27 @@ title: 类型
 ```ts
 export type { CanvasProps } from './canvas'
 export type { LayoutEngine } from './layout'
-export type { CanvasNode, Layout, NodeType, RootNode, RectNode, TextNode, ViewNode } from './nodes'
+export type {
+	CanvasNode,
+	CircleNode,
+	ImageNode,
+	Layout,
+	NodeType,
+	RectNode,
+	RootNode,
+	TextNode,
+	ViewNode,
+} from './nodes'
 export type {
 	CanvasPointerEvent,
 	CanvasPointerEventHandler,
 	CanvasPointerEventType,
 	PointerEventsMode,
+	CircleProps,
 	RectProps,
 	TextProps,
 	ViewProps,
+	ImageProps,
 	YogaStyle,
 } from './jsx'
 export type { CanvasContainer, CanvasRootOptions, MeasureTextFn } from './runtime'
@@ -161,6 +173,25 @@ export type RectProps = {
 	stroke?: string
 	lineWidth?: number
 	borderRadius?: number
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+}
+
+export type CircleProps = {
+	children?: import('react').ReactNode
+	style?: YogaStyle
+	fill?: string
+	stroke?: string
+	lineWidth?: number
 	pointerEvents?: PointerEventsMode
 	onPointerDownCapture?: CanvasPointerEventHandler
 	onPointerDown?: CanvasPointerEventHandler

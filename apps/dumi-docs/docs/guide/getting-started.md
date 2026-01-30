@@ -7,7 +7,7 @@ title: Getting Started
 核心包名为 `react-canvas-fiber`：
 
 ```tsx | preview
-import { Canvas, Rect, Text, View } from '@jiujue/react-canvas-fiber'
+import { Canvas, Circle, Rect, Text, View } from '@jiujue/react-canvas-fiber'
 
 export default function Demo() {
 	const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
@@ -44,6 +44,7 @@ export default function Demo() {
 				<View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
 					<Rect style={{ width: 180, height: 44 }} borderRadius={12} fill="#22c55e" />
 					<Rect style={{ width: 120, height: 44 }} borderRadius={12} fill="#60a5fa" />
+					<Circle style={{ width: 44, height: 44 }} fill="#f59e0b" />
 					<Rect
 						style={{ flexGrow: 1, height: 44 }}
 						borderRadius={12}
@@ -59,4 +60,4 @@ export default function Demo() {
 ## 基本概念
 
 - `Canvas`：DOM 侧桥接组件，负责创建 `<canvas>` 并管理渲染 root
-- `View/Rect/Text`：自定义 renderer 的 Host 节点，交给 Yoga 布局，最后用 Canvas2D 绘制
+- `View/Rect/Circle/Text/Image`：自定义 renderer 的 Host 节点，交给 Yoga 布局，最后用 Canvas2D 绘制

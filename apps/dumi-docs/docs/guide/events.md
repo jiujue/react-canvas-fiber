@@ -2,7 +2,7 @@
 title: Events（指针与点击）
 ---
 
-`View` / `Rect` / `Text` / `Image` 支持 `onPointerDown/Move/Up/Cancel`、`onPointerEnter/Leave` 与 `onClick`（含 Capture 版本）。
+`View` / `Rect` / `Circle` / `Text` / `Image` 支持 `onPointerDown/Move/Up/Cancel`、`onPointerEnter/Leave` 与 `onClick`（含 Capture 版本）。
 
 ## 点击切换
 

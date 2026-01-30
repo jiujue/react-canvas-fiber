@@ -1,8 +1,11 @@
 import type { CanvasNode, NodeType, RootNode } from '../types'
 export type {
 	CanvasNode,
+	CircleNode,
+	LineNode,
 	Layout,
 	NodeType,
+	PathNode,
 	RootNode,
 	RectNode,
 	TextNode,
@@ -61,6 +64,9 @@ export function createNode(type: Exclude<NodeType, 'Root'>, props: any): CanvasN
 		;(node as any).imageInstance = null
 	} else if (type === 'View') {
 		;(node as any).backgroundImageInstance = null
+	} else if (type === 'Path') {
+		;(node as any).path2d = null
+		;(node as any).pathSource = null
 	}
 
 	return node

@@ -136,6 +136,75 @@ export type RectProps = {
 	onPointerLeave?: CanvasPointerEventHandler
 }
 
+export type CircleProps = {
+	children?: ReactNode
+	style?: YogaStyle
+	fill?: string
+	stroke?: string
+	lineWidth?: number
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
+}
+
+export type PathProps = {
+	children?: ReactNode
+	style?: YogaStyle
+	d: string
+	fill?: string
+	fillRule?: CanvasFillRule
+	stroke?: string
+	lineWidth?: number
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
+}
+
+export type LineProps = {
+	children?: ReactNode
+	style?: YogaStyle
+	x1?: number
+	y1?: number
+	x2?: number
+	y2?: number
+	stroke?: string
+	lineWidth?: number
+	lineCap?: CanvasLineCap
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
+}
+
 export type TextProps = {
 	children?: never
 	text: string

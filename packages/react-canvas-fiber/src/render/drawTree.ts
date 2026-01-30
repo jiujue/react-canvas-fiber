@@ -1,6 +1,7 @@
 import type { CanvasNode, RootNode } from '../runtime/nodes'
 import type { DrawState } from '../types'
 import type { CanvasRootOptions } from '../types'
+import { drawLineNode, drawPathNode } from './drawPrimitives'
 
 /**
  * Canvas2D 绘制层：将布局后的场景树绘制到 CanvasRenderingContext2D。
@@ -442,6 +443,39 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 			ctx.stroke()
 		}
 		ctx.restore()
+	}
+
+	if (node.type === 'Circle') {
+		const fill = (node.props as any).fill ?? '#ffffff'
+		const stroke = (node.props as any).stroke
+		const lineWidth = (node.props as any).lineWidth ?? 1
+		if (w > 0 && h > 0) {
+			const cx = x + w / 2
+			const cy = y + h / 2
+			const rx = w / 2
+			const ry = h / 2
+			ctx.save()
+			ctx.beginPath()
+			ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
+			if (fill) {
+				ctx.fillStyle = fill
+				ctx.fill()
+			}
+			if (stroke) {
+				ctx.strokeStyle = stroke
+				ctx.lineWidth = lineWidth
+				ctx.stroke()
+			}
+			ctx.restore()
+		}
+	}
+
+	if (node.type === 'Path') {
+		drawPathNode(ctx, node as any, x, y)
+	}
+
+	if (node.type === 'Line') {
+		drawLineNode(ctx, node as any, x, y, w, h)
 	}
 
 	if (node.type === 'Text') {

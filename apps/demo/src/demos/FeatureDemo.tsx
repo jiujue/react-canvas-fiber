@@ -1,4 +1,4 @@
-import { Canvas, Rect, Text, View, Image } from '@jiujue/react-canvas-fiber'
+import { Canvas, Circle, Rect, Text, View, Image } from '@jiujue/react-canvas-fiber'
 import { useState } from 'react'
 
 export default function FeatureDemo() {
@@ -118,6 +118,19 @@ export default function FeatureDemo() {
 								<View style={{ flexDirection: 'column' }}>
 									<Text text="User Avatar" style={{ fontSize: 14 }} color="#e6edf7" />
 									<Text text="Supports object-fit" style={{ fontSize: 10 }} color="#94a3b8" />
+								</View>
+							</View>
+
+							<View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+								<Circle
+									style={{ width: 40, height: 40 }}
+									fill="#22c55e"
+									stroke="rgba(255,255,255,0.75)"
+									lineWidth={2}
+								/>
+								<View style={{ flexDirection: 'column' }}>
+									<Text text="Circle Node" style={{ fontSize: 14 }} color="#e6edf7" />
+									<Text text="Ellipse + hitTest" style={{ fontSize: 10 }} color="#94a3b8" />
 								</View>
 							</View>
 
