@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.3
+
+### Patch Changes
+
+- a63ffdb: feat(core): add circle path line cnps
+
 ## 2.1.2
 
 ### Patch Changes
