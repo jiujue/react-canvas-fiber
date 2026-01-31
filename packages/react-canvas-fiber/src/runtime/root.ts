@@ -5,8 +5,185 @@ import { layoutTree } from '../layout'
 import { createReconcilerRoot } from './reconciler'
 import type { CanvasNode, RootNode } from './nodes'
 import type { CanvasPointerEventType, CanvasRootOptions, MeasureTextFn } from '../types'
-import { resolvePath2D } from '../utils'
+import {
+	IDENTITY_MATRIX,
+	applyToPoint,
+	estimateUniformScale,
+	invertMatrix,
+	multiplyMatrix,
+	parseTransform,
+	resolveOverflowHidden,
+	resolvePath2D,
+	resolveTransformOrigin,
+	resolveZIndex,
+	translationMatrix,
+} from '../utils'
 import { hitTestEllipse, hitTestLineSegment } from './hitTestPrimitives'
+
+function getOrderedChildrenByZIndex(node: CanvasNode): CanvasNode[] {
+	const children = node.children
+	if (children.length <= 1) return children
+	let hasAnyZ = false
+	for (let i = 0; i < children.length; i += 1) {
+		const z = resolveZIndex((children[i].props as any)?.style?.zIndex)
+		if (z !== 0) {
+			hasAnyZ = true
+			break
+		}
+	}
+	if (!hasAnyZ) return children
+	return children
+		.map((child, index) => ({
+			child,
+			index,
+			zIndex: resolveZIndex((child.props as any)?.style?.zIndex),
+		}))
+		.sort((a, b) => a.zIndex - b.zIndex || a.index - b.index)
+		.map((x) => x.child)
+}
+
+function computeLocalTransform(style: any, w: number, h: number) {
+	const transformMatrix = parseTransform(style?.transform)
+	const hasTransform =
+		transformMatrix.a !== IDENTITY_MATRIX.a ||
+		transformMatrix.b !== IDENTITY_MATRIX.b ||
+		transformMatrix.c !== IDENTITY_MATRIX.c ||
+		transformMatrix.d !== IDENTITY_MATRIX.d ||
+		transformMatrix.e !== IDENTITY_MATRIX.e ||
+		transformMatrix.f !== IDENTITY_MATRIX.f
+	if (!hasTransform) return { matrix: IDENTITY_MATRIX, inv: IDENTITY_MATRIX, scale: 1 }
+
+	const origin = resolveTransformOrigin(style?.transformOrigin, w, h)
+	const withOrigin = multiplyMatrix(
+		translationMatrix(origin.x, origin.y),
+		multiplyMatrix(transformMatrix, translationMatrix(-origin.x, -origin.y)),
+	)
+	const inv = invertMatrix(withOrigin)
+	if (!inv) return { matrix: withOrigin, inv: null, scale: estimateUniformScale(withOrigin) }
+	return { matrix: withOrigin, inv, scale: estimateUniformScale(withOrigin) }
+}
+
+function hitTestRoundedRect(x: number, y: number, w: number, h: number, r: number): boolean {
+	if (!(w > 0 && h > 0)) return false
+	const radius = Math.max(0, Math.min(r, Math.min(w, h) / 2))
+	if (radius === 0) return x >= 0 && x <= w && y >= 0 && y <= h
+
+	if (x < 0 || x > w || y < 0 || y > h) return false
+
+	if (x >= radius && x <= w - radius) return true
+	if (y >= radius && y <= h - radius) return true
+
+	const cx = x < radius ? radius : w - radius
+	const cy = y < radius ? radius : h - radius
+	const dx = x - cx
+	const dy = y - cy
+	return dx * dx + dy * dy <= radius * radius
+}
+
+export function hitTestTree(
+	rootChildren: CanvasNode[],
+	x: number,
+	y: number,
+	ctx?: CanvasRenderingContext2D | null,
+): CanvasNode | null {
+	const orderedRoots =
+		rootChildren.length <= 1
+			? rootChildren
+			: rootChildren
+					.map((child, index) => ({
+						child,
+						index,
+						zIndex: resolveZIndex((child.props as any)?.style?.zIndex),
+					}))
+					.sort((a, b) => a.zIndex - b.zIndex || a.index - b.index)
+					.map((x) => x.child)
+
+	const visit = (node: CanvasNode, px: number, py: number): CanvasNode | null => {
+		if ((node.props as any)?.pointerEvents === 'none') return null
+
+		const w = node.layout.width
+		const h = node.layout.height
+		const style = (node.props as any)?.style ?? {}
+
+		let localX = px - node.layout.x
+		let localY = py - node.layout.y
+
+		const t = computeLocalTransform(style, w, h)
+		if (t.inv === null) return null
+		if (t.matrix !== IDENTITY_MATRIX) {
+			const p = applyToPoint(t.inv, localX, localY)
+			localX = p.x
+			localY = p.y
+		}
+
+		const inBox = localX >= 0 && localX <= w && localY >= 0 && localY <= h
+
+		const overflowHidden = resolveOverflowHidden(style.overflow)
+		const isView = node.type === 'View'
+		const scrollX = isView && !!(node.props as any)?.scrollX
+		const scrollY = isView && !!(node.props as any)?.scrollY
+		const clipped = scrollX || scrollY || overflowHidden
+		let inClip = inBox
+		if (clipped && isView) {
+			const radius = (node.props as any)?.borderRadius ?? 0
+			if (typeof radius === 'number' && radius > 0) {
+				inClip = hitTestRoundedRect(localX, localY, w, h, radius)
+			}
+		}
+		if (clipped && !inClip) return null
+
+		let childPX = localX
+		let childPY = localY
+		if (scrollX) childPX += node.scrollLeft ?? 0
+		if (scrollY) childPY += node.scrollTop ?? 0
+
+		const children = getOrderedChildrenByZIndex(node)
+		for (let i = children.length - 1; i >= 0; i -= 1) {
+			const hit = visit(children[i], childPX, childPY)
+			if (hit) return hit
+		}
+
+		if (!inClip) return null
+
+		if (node.type === 'Circle') {
+			if (!hitTestEllipse(localX, localY, 0, 0, w, h)) return null
+		}
+
+		if (node.type === 'Line') {
+			const x1 = (node.props as any).x1 ?? 0
+			const y1 = (node.props as any).y1 ?? 0
+			const x2 = (node.props as any).x2 ?? w
+			const y2 = (node.props as any).y2 ?? h
+			const lineWidth = (node.props as any).lineWidth ?? 1
+			const threshold = Math.max(1, (lineWidth / 2) * t.scale)
+			if (!hitTestLineSegment(localX, localY, x1, y1, x2, y2, threshold)) return null
+		}
+
+		if (node.type === 'Path') {
+			const path = resolvePath2D(node as any)
+			if (!path) return null
+			if (!ctx) return node
+			const fillRule = (node.props as any).fillRule
+			const stroke = (node.props as any).stroke
+			const lineWidth = (node.props as any).lineWidth ?? 1
+			ctx.save()
+			ctx.setTransform(1, 0, 0, 1, 0, 0)
+			ctx.lineWidth = lineWidth * t.scale
+			const inFill = ctx.isPointInPath(path as any, localX, localY, fillRule)
+			const inStroke = stroke ? ctx.isPointInStroke(path as any, localX, localY) : false
+			ctx.restore()
+			if (!inFill && !inStroke) return null
+		}
+
+		return node
+	}
+
+	for (let i = orderedRoots.length - 1; i >= 0; i -= 1) {
+		const hit = visit(orderedRoots[i], x, y)
+		if (hit) return hit
+	}
+	return null
+}
 
 /**
  * 创建自定义 renderer 的运行时 Root。
@@ -376,66 +553,8 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		return { maxScrollLeft, trackX, trackY, trackW, thumbX, thumbW }
 	}
 
-	const hitTestNode = (
-		node: CanvasNode,
-		x: number,
-		y: number,
-		offsetX: number,
-		offsetY: number,
-	): CanvasNode | null => {
-		if ((node.props as any)?.pointerEvents === 'none') return null
-		const left = offsetX + node.layout.x
-		const top = offsetY + node.layout.y
-		const right = left + node.layout.width
-		const bottom = top + node.layout.height
-		if (x < left || x > right || y < top || y > bottom) return null
-
-		const childOffsetX =
-			node.type === 'View' && (node.props as any)?.scrollX ? left - (node.scrollLeft ?? 0) : left
-		const childOffsetY =
-			node.type === 'View' && (node.props as any)?.scrollY ? top - (node.scrollTop ?? 0) : top
-
-		for (let i = node.children.length - 1; i >= 0; i -= 1) {
-			const child = node.children[i]
-			const hit = hitTestNode(child, x, y, childOffsetX, childOffsetY)
-			if (hit) return hit
-		}
-
-		if (node.type === 'Circle') {
-			const ok = hitTestEllipse(x, y, left, top, node.layout.width, node.layout.height)
-			if (!ok) return null
-		}
-
-		if (node.type === 'Line') {
-			const w = node.layout.width
-			const h = node.layout.height
-			const x1 = (node.props as any).x1 ?? 0
-			const y1 = (node.props as any).y1 ?? 0
-			const x2 = (node.props as any).x2 ?? w
-			const y2 = (node.props as any).y2 ?? h
-			const lineWidth = (node.props as any).lineWidth ?? 1
-			const threshold = Math.max(1, lineWidth / 2)
-			const ok = hitTestLineSegment(x, y, left + x1, top + y1, left + x2, top + y2, threshold)
-			if (!ok) return null
-		}
-
-		if (node.type === 'Path') {
-			const path = resolvePath2D(node as any)
-			if (!path) return null
-			const fillRule = (node.props as any).fillRule
-			const stroke = (node.props as any).stroke
-			const lineWidth = (node.props as any).lineWidth ?? 1
-			ctx.save()
-			ctx.setTransform(1, 0, 0, 1, 0, 0)
-			ctx.translate(left, top)
-			ctx.lineWidth = lineWidth
-			const inFill = ctx.isPointInPath(path as any, x, y, fillRule)
-			const inStroke = stroke ? ctx.isPointInStroke(path as any, x, y) : false
-			ctx.restore()
-			if (!inFill && !inStroke) return null
-		}
-
-		return node
+	const hitTest = (x: number, y: number): CanvasNode | null => {
+		return hitTestTree(rootNode.children, x, y, ctx)
 	}
 
 	const hitTestScrollbarThumbNode = (
@@ -481,8 +600,9 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		const childOffsetY =
 			node.type === 'View' && (node.props as any)?.scrollY ? top - (node.scrollTop ?? 0) : top
 
-		for (let i = node.children.length - 1; i >= 0; i -= 1) {
-			const child = node.children[i]
+		const children = getOrderedChildrenByZIndex(node)
+		for (let i = children.length - 1; i >= 0; i -= 1) {
+			const child = children[i]
 			const hit = hitTestScrollbarThumbNode(child, x, y, childOffsetX, childOffsetY)
 			if (hit) return hit
 		}
@@ -494,18 +614,21 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		x: number,
 		y: number,
 	): { view: CanvasNode; axis: 'x' | 'y' } | null => {
-		for (let i = rootNode.children.length - 1; i >= 0; i -= 1) {
-			const child = rootNode.children[i]
+		const rootChildren = rootNode.children
+		const orderedRoots =
+			rootChildren.length <= 1
+				? rootChildren
+				: rootChildren
+						.map((child, index) => ({
+							child,
+							index,
+							zIndex: resolveZIndex((child.props as any)?.style?.zIndex),
+						}))
+						.sort((a, b) => a.zIndex - b.zIndex || a.index - b.index)
+						.map((x) => x.child)
+		for (let i = orderedRoots.length - 1; i >= 0; i -= 1) {
+			const child = orderedRoots[i]
 			const hit = hitTestScrollbarThumbNode(child, x, y, 0, 0)
-			if (hit) return hit
-		}
-		return null
-	}
-
-	const hitTest = (x: number, y: number): CanvasNode | null => {
-		for (let i = rootNode.children.length - 1; i >= 0; i -= 1) {
-			const child = rootNode.children[i]
-			const hit = hitTestNode(child, x, y, 0, 0)
 			if (hit) return hit
 		}
 		return null

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- fix(core): scroll view clip respects borderRadius
+- fix(core): hitTest respects borderRadius when clipped
+- docs: sync transform/opacity/overflow/zIndex examples
+
 ## 2.1.3
 
 ### Patch Changes

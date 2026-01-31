@@ -62,3 +62,15 @@ export default function Demo() {
 	)
 }
 ```
+
+## Props
+
+| Name         | Type        | Default | Description                           |
+| ------------ | ----------- | ------- | ------------------------------------- |
+| fill         | `string`    | `#fff`  | 填充色                                |
+| stroke       | `string`    | -       | 描边色                                |
+| lineWidth    | `number`    | `1`     | 描边线宽                              |
+| borderRadius | `number`    | `0`     | 圆角半径                              |
+| style        | `YogaStyle` | -       | 布局样式，建议提供 width/height       |
+| ...events    | -           | -       | `onClick`, `onPointerDown/Move/Up` 等 |
+| children     | `ReactNode` | -       | 子节点（参与布局与绘制）              |

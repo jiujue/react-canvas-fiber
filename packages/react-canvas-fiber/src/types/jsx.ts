@@ -73,6 +73,15 @@ export type YogaStyle = {
 
 	gap?: number
 
+	/**
+	 * 中文说明：以下四项不参与 Yoga 计算，只影响绘制与命中顺序/裁剪。
+	 */
+	transform?: string | number[]
+	transformOrigin?: string
+	overflow?: 'visible' | 'hidden'
+	zIndex?: number
+	opacity?: number
+
 	fontSize?: number
 	fontFamily?: string
 	fontWeight?: number | string

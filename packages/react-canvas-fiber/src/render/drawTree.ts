@@ -2,6 +2,14 @@ import type { CanvasNode, RootNode } from '../runtime/nodes'
 import type { DrawState } from '../types'
 import type { CanvasRootOptions } from '../types'
 import { drawLineNode, drawPathNode } from './drawPrimitives'
+import {
+	IDENTITY_MATRIX,
+	parseTransform,
+	resolveOpacity,
+	resolveOverflowHidden,
+	resolveTransformOrigin,
+	resolveZIndex,
+} from '../utils'
 
 /**
  * Canvas2D 绘制层：将布局后的场景树绘制到 CanvasRenderingContext2D。
@@ -283,18 +291,73 @@ function drawBackgroundImage(
 
 /**
  * 绘制单个节点及其子树。
- * offsetX/offsetY 为父节点累加的偏移，用于把 computed layout 转换成最终画布坐标。
+ *
+ * 中文说明：
+ * - drawNode 内部将 ctx 变换到“节点局部坐标系”（0,0 为节点左上角）
+ * - 子节点只需要按自己的 layout.x/y 继续 translate 即可
+ * - transform/opacity/overflow/zIndex 都在该局部坐标系下生效，并可自然传递到子树
  */
-function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: number) {
+function drawNode(state: DrawState, node: CanvasNode) {
 	const { ctx } = state
-	const x = offsetX + node.layout.x
-	const y = offsetY + node.layout.y
 	const w = node.layout.width
 	const h = node.layout.height
+
+	const style = (node.props as any)?.style ?? {}
+	const opacity = resolveOpacity(style.opacity)
+	const overflowHidden = resolveOverflowHidden(style.overflow)
+
+	const transformMatrix = parseTransform(style.transform)
+	const hasTransform =
+		transformMatrix.a !== IDENTITY_MATRIX.a ||
+		transformMatrix.b !== IDENTITY_MATRIX.b ||
+		transformMatrix.c !== IDENTITY_MATRIX.c ||
+		transformMatrix.d !== IDENTITY_MATRIX.d ||
+		transformMatrix.e !== IDENTITY_MATRIX.e ||
+		transformMatrix.f !== IDENTITY_MATRIX.f
 
 	let viewBorder: ResolvedBorder | null = null
 	let viewRadius = 0
 	let viewIsScroll = false
+
+	const getOrderedChildren = () => {
+		const children = node.children
+		if (children.length <= 1) return children
+		let hasAnyZ = false
+		for (let i = 0; i < children.length; i += 1) {
+			const z = resolveZIndex((children[i].props as any)?.style?.zIndex)
+			if (z !== 0) {
+				hasAnyZ = true
+				break
+			}
+		}
+		if (!hasAnyZ) return children
+		return children
+			.map((child, index) => ({
+				child,
+				index,
+				zIndex: resolveZIndex((child.props as any)?.style?.zIndex),
+			}))
+			.sort((a, b) => a.zIndex - b.zIndex || a.index - b.index)
+			.map((x) => x.child)
+	}
+
+	ctx.save()
+	ctx.translate(node.layout.x, node.layout.y)
+	if (opacity !== 1) ctx.globalAlpha *= opacity
+
+	if (hasTransform) {
+		const origin = resolveTransformOrigin(style.transformOrigin, w, h)
+		ctx.translate(origin.x, origin.y)
+		ctx.transform(
+			transformMatrix.a,
+			transformMatrix.b,
+			transformMatrix.c,
+			transformMatrix.d,
+			transformMatrix.e,
+			transformMatrix.f,
+		)
+		ctx.translate(-origin.x, -origin.y)
+	}
 
 	if (node.type === 'View') {
 		const background = (node.props as any).background
@@ -318,7 +381,7 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		if (background) {
 			ctx.save()
 			ctx.fillStyle = background
-			drawRoundedRect(ctx, x, y, w, h, viewRadius)
+			drawRoundedRect(ctx, 0, 0, w, h, viewRadius)
 			ctx.fill()
 			ctx.restore()
 		}
@@ -326,29 +389,47 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		// Background Image
 		const viewNode = node as unknown as import('../runtime/nodes').ViewNode
 		if (viewNode.backgroundImageInstance) {
-			drawBackgroundImage(ctx, viewNode, x, y, w, h, viewRadius)
+			drawBackgroundImage(ctx, viewNode, 0, 0, w, h, viewRadius)
+		}
+
+		if (overflowHidden && !scrollX && !scrollY) {
+			ctx.save()
+			drawRoundedRect(ctx, 0, 0, w, h, viewRadius)
+			ctx.clip()
+			for (const child of getOrderedChildren()) {
+				drawNode(state, child)
+			}
+			ctx.restore()
+			if (viewBorder) drawBorder(ctx, 0, 0, w, h, viewRadius, viewBorder)
+			ctx.restore()
+			return
 		}
 
 		if (scrollX || scrollY) {
 			viewIsScroll = true
 			ctx.save()
 			ctx.beginPath()
-			ctx.rect(x, y, w, h)
+			if (viewRadius > 0) {
+				drawRoundedRect(ctx, 0, 0, w, h, viewRadius)
+			} else {
+				ctx.rect(0, 0, w, h)
+			}
 			ctx.clip()
+			ctx.translate(-scrollLeft, -scrollTop)
 			const cullPadding = 1
-			const viewportX = x - cullPadding
-			const viewportY = y - cullPadding
+			const viewportX = scrollLeft - cullPadding
+			const viewportY = scrollTop - cullPadding
 			const viewportW = w + cullPadding * 2
 			const viewportH = h + cullPadding * 2
-			for (const child of node.children) {
+			for (const child of getOrderedChildren()) {
 				const bounds = child.contentBounds ?? {
 					x: 0,
 					y: 0,
 					width: child.layout.width,
 					height: child.layout.height,
 				}
-				const bx = x - scrollLeft + child.layout.x + bounds.x
-				const by = y - scrollTop + child.layout.y + bounds.y
+				const bx = child.layout.x + bounds.x
+				const by = child.layout.y + bounds.y
 				if (
 					!rectsIntersect(
 						viewportX,
@@ -363,15 +444,15 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 				) {
 					continue
 				}
-				drawNode(state, child, x - scrollLeft, y - scrollTop)
+				drawNode(state, child)
 			}
 			ctx.restore()
 
 			const corner = scrollbarInset + scrollbarWidth
 
 			if (scrollbarY && maxScrollTop > 0) {
-				const trackX = x + w - scrollbarInset - scrollbarWidth
-				const trackY = y + scrollbarInset
+				const trackX = w - scrollbarInset - scrollbarWidth
+				const trackY = scrollbarInset
 				const trackH = Math.max(
 					0,
 					h - scrollbarInset * 2 - (scrollbarX && maxScrollLeft > 0 ? corner : 0),
@@ -396,8 +477,8 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 			}
 
 			if (scrollbarX && maxScrollLeft > 0) {
-				const trackX = x + scrollbarInset
-				const trackY = y + h - scrollbarInset - scrollbarWidth
+				const trackX = scrollbarInset
+				const trackY = h - scrollbarInset - scrollbarWidth
 				const trackW = Math.max(
 					0,
 					w - scrollbarInset * 2 - (scrollbarY && maxScrollTop > 0 ? corner : 0),
@@ -421,7 +502,8 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 				ctx.restore()
 			}
 
-			if (viewBorder) drawBorder(ctx, x, y, w, h, viewRadius, viewBorder)
+			if (viewBorder) drawBorder(ctx, 0, 0, w, h, viewRadius, viewBorder)
+			ctx.restore()
 			return
 		}
 	}
@@ -432,7 +514,7 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		const lineWidth = node.props.lineWidth ?? 1
 		const radius = node.props.borderRadius ?? 0
 		ctx.save()
-		drawRoundedRect(ctx, x, y, w, h, radius)
+		drawRoundedRect(ctx, 0, 0, w, h, radius)
 		if (fill) {
 			ctx.fillStyle = fill
 			ctx.fill()
@@ -450,8 +532,8 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		const stroke = (node.props as any).stroke
 		const lineWidth = (node.props as any).lineWidth ?? 1
 		if (w > 0 && h > 0) {
-			const cx = x + w / 2
-			const cy = y + h / 2
+			const cx = w / 2
+			const cy = h / 2
 			const rx = w / 2
 			const ry = h / 2
 			ctx.save()
@@ -471,11 +553,11 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 	}
 
 	if (node.type === 'Path') {
-		drawPathNode(ctx, node as any, x, y)
+		drawPathNode(ctx, node as any, 0, 0)
 	}
 
 	if (node.type === 'Line') {
-		drawLineNode(ctx, node as any, x, y, w, h)
+		drawLineNode(ctx, node as any, 0, 0, w, h)
 	}
 
 	if (node.type === 'Text') {
@@ -488,7 +570,7 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 		ctx.textBaseline = 'top'
 		const lines = String(text).split('\n')
 		for (let i = 0; i < lines.length; i += 1) {
-			ctx.fillText(lines[i], x, y + i * lineHeight)
+			ctx.fillText(lines[i], 0, i * lineHeight)
 		}
 		ctx.restore()
 	}
@@ -501,8 +583,8 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 			const srcW = imageInstance.naturalWidth
 			const srcH = imageInstance.naturalHeight
 
-			let dstX = x
-			let dstY = y
+			let dstX = 0
+			let dstY = 0
 			let dstW = w
 			let dstH = h
 			let srcX = 0
@@ -516,8 +598,8 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 				const ratio = Math.min(w / srcW, h / srcH)
 				dstW = srcW * ratio
 				dstH = srcH * ratio
-				dstX = x + (w - dstW) / 2
-				dstY = y + (h - dstH) / 2
+				dstX = (w - dstW) / 2
+				dstY = (h - dstH) / 2
 			} else if (objectFit === 'cover') {
 				const ratio = Math.max(w / srcW, h / srcH)
 				const renderW = srcW * ratio
@@ -530,20 +612,22 @@ function drawNode(state: DrawState, node: CanvasNode, offsetX: number, offsetY: 
 
 			ctx.save()
 			ctx.beginPath()
-			drawRoundedRect(ctx, x, y, w, h, radius)
+			drawRoundedRect(ctx, 0, 0, w, h, radius)
 			ctx.clip()
 			ctx.drawImage(imageInstance, srcX, srcY, finalSrcW, finalSrcH, dstX, dstY, dstW, dstH)
 			ctx.restore()
 		}
 	}
 
-	for (const child of node.children) {
-		drawNode(state, child, x, y)
+	for (const child of getOrderedChildren()) {
+		drawNode(state, child)
 	}
 
 	if (node.type === 'View' && !viewIsScroll && viewBorder) {
-		drawBorder(ctx, x, y, w, h, viewRadius, viewBorder)
+		drawBorder(ctx, 0, 0, w, h, viewRadius, viewBorder)
 	}
+
+	ctx.restore()
 }
 
 /**
@@ -572,8 +656,28 @@ export function drawTree(
 	ctx.save()
 	ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 	const state: DrawState = { ctx, dpr, defaults }
-	for (const child of root.children) {
-		drawNode(state, child, 0, 0)
+	const rootChildren = root.children
+	let hasAnyZ = false
+	for (let i = 0; i < rootChildren.length; i += 1) {
+		const z = resolveZIndex((rootChildren[i].props as any)?.style?.zIndex)
+		if (z !== 0) {
+			hasAnyZ = true
+			break
+		}
+	}
+	const orderedRootChildren = hasAnyZ
+		? rootChildren
+				.map((child, index) => ({
+					child,
+					index,
+					zIndex: resolveZIndex((child.props as any)?.style?.zIndex),
+				}))
+				.sort((a, b) => a.zIndex - b.zIndex || a.index - b.index)
+				.map((x) => x.child)
+		: rootChildren
+
+	for (const child of orderedRootChildren) {
+		drawNode(state, child)
 	}
 	ctx.restore()
 }

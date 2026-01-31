@@ -129,6 +129,11 @@ export default function Demo() {
 ## Props 要点
 
 - `style?: YogaStyle`: 布局样式
+- `style.transform?: string | number[]`：2D transform（translate/scale/rotate/skew/matrix）
+- `style.transformOrigin?: string`：transform 原点（默认 center）
+- `style.opacity?: number`：透明度（0~1）
+- `style.overflow?: 'visible' | 'hidden'`：裁剪子内容（配合圆角）
+- `style.zIndex?: number`：绘制与命中顺序（更大更靠上）
 - `background?: string`: 背景色
 - `backgroundImage?: string`: 图片 URL
 - `backgroundSize?: string`: `cover` | `contain` | `auto` | `100px 50px` | `50% 50%`
@@ -136,5 +141,10 @@ export default function Demo() {
 - `backgroundRepeat?: string`: `repeat` | `no-repeat` | `repeat-x` | `repeat-y`
 - `border?: string`，例如 `1px solid rgba(255,255,255,0.2)`
 - `borderRadius?: number`
-- `scrollX/scrollY` 与滚动条相关属性
-- `pointerEvents?: 'auto' | 'none'` 与事件回调
+- `scrollX?: boolean` / `scrollY?: boolean`：启用 X/Y 方向滚动（会裁剪子内容）
+- `scrollbarX?: boolean` / `scrollbarY?: boolean`：是否显示滚动条（默认显示；设为 `false` 可隐藏）
+- `scrollbarWidth?: number`（默认 `10`）、`scrollbarInset?: number`（默认 `6`）
+- `scrollbarTrackColor?: string`（默认 `rgba(255,255,255,0.12)`）、`scrollbarThumbColor?: string`（默认 `rgba(255,255,255,0.35)`）
+- `onScrollX?: (scrollLeft) => void` / `onScroll?: (scrollTop) => void`：滚动位置变化回调（支持滚轮与拖拽滚动条）
+- `pointerEvents?: 'auto' | 'none'`：是否参与命中
+- 事件回调：`onPointerDown/Move/Up/Cancel`、`onPointerEnter/Leave`、`onClick`（含 Capture 版本）

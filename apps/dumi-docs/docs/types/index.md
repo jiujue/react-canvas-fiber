@@ -14,7 +14,9 @@ export type {
 	CircleNode,
 	ImageNode,
 	Layout,
+	LineNode,
 	NodeType,
+	PathNode,
 	RectNode,
 	RootNode,
 	TextNode,
@@ -24,12 +26,14 @@ export type {
 	CanvasPointerEvent,
 	CanvasPointerEventHandler,
 	CanvasPointerEventType,
-	PointerEventsMode,
 	CircleProps,
+	ImageProps,
+	LineProps,
+	PathProps,
+	PointerEventsMode,
 	RectProps,
 	TextProps,
 	ViewProps,
-	ImageProps,
 	YogaStyle,
 } from './jsx'
 export type { CanvasContainer, CanvasRootOptions, MeasureTextFn } from './runtime'
@@ -62,6 +66,8 @@ export type CanvasPointerEventType =
 	| 'pointerup'
 	| 'pointercancel'
 	| 'click'
+	| 'pointerenter'
+	| 'pointerleave'
 
 export type CanvasPointerEvent = {
 	type: CanvasPointerEventType
@@ -127,6 +133,12 @@ export type YogaStyle = {
 
 	gap?: number
 
+	transform?: string | number[]
+	transformOrigin?: string
+	overflow?: 'visible' | 'hidden'
+	zIndex?: number
+	opacity?: number
+
 	fontSize?: number
 	fontFamily?: string
 	fontWeight?: number | string
@@ -138,8 +150,8 @@ export type ViewProps = {
 	style?: YogaStyle
 	background?: string
 	backgroundImage?: string
-	backgroundSize?: string
 	backgroundPosition?: string
+	backgroundSize?: string
 	backgroundRepeat?: string
 	border?: string
 	borderRadius?: number
@@ -164,6 +176,8 @@ export type ViewProps = {
 	onPointerCancel?: CanvasPointerEventHandler
 	onClickCapture?: CanvasPointerEventHandler
 	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
 }
 
 export type RectProps = {
@@ -184,6 +198,8 @@ export type RectProps = {
 	onPointerCancel?: CanvasPointerEventHandler
 	onClickCapture?: CanvasPointerEventHandler
 	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
 }
 
 export type CircleProps = {
@@ -203,6 +219,56 @@ export type CircleProps = {
 	onPointerCancel?: CanvasPointerEventHandler
 	onClickCapture?: CanvasPointerEventHandler
 	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
+}
+
+export type PathProps = {
+	children?: import('react').ReactNode
+	style?: YogaStyle
+	d: string
+	fill?: string
+	fillRule?: CanvasFillRule
+	stroke?: string
+	lineWidth?: number
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
+}
+
+export type LineProps = {
+	children?: import('react').ReactNode
+	style?: YogaStyle
+	x1?: number
+	y1?: number
+	x2?: number
+	y2?: number
+	stroke?: string
+	lineWidth?: number
+	lineCap?: CanvasLineCap
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
 }
 
 export type TextProps = {
@@ -222,6 +288,29 @@ export type TextProps = {
 	onPointerCancel?: CanvasPointerEventHandler
 	onClickCapture?: CanvasPointerEventHandler
 	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
+}
+
+export type ImageProps = {
+	children?: never
+	style?: YogaStyle
+	src: string
+	objectFit?: 'cover' | 'contain' | 'fill'
+	borderRadius?: number
+	pointerEvents?: PointerEventsMode
+	onPointerDownCapture?: CanvasPointerEventHandler
+	onPointerDown?: CanvasPointerEventHandler
+	onPointerMoveCapture?: CanvasPointerEventHandler
+	onPointerMove?: CanvasPointerEventHandler
+	onPointerUpCapture?: CanvasPointerEventHandler
+	onPointerUp?: CanvasPointerEventHandler
+	onPointerCancelCapture?: CanvasPointerEventHandler
+	onPointerCancel?: CanvasPointerEventHandler
+	onClickCapture?: CanvasPointerEventHandler
+	onClick?: CanvasPointerEventHandler
+	onPointerEnter?: CanvasPointerEventHandler
+	onPointerLeave?: CanvasPointerEventHandler
 }
 ```
 
@@ -236,7 +325,7 @@ export type LayoutEngine = {
 ## Node Types
 
 ```ts
-export type NodeType = 'Root' | 'View' | 'Rect' | 'Text'
+export type NodeType = 'Root' | 'View' | 'Rect' | 'Circle' | 'Path' | 'Line' | 'Text' | 'Image'
 
 export type Layout = {
 	x: number
@@ -247,10 +336,11 @@ export type Layout = {
 
 export type BaseNode<T extends NodeType, P> = {
 	type: T
-	parent: CanvasNode | null
+	parent: CanvasNode | RootNode | null
 	children: CanvasNode[]
 	props: P
 	layout: Layout
+	contentBounds?: Layout
 	yogaNode: any | null
 	debugId: number
 	scrollLeft?: number
@@ -266,10 +356,29 @@ export type BaseNode<T extends NodeType, P> = {
 }
 
 export type RootNode = BaseNode<'Root', Record<string, never>>
-export type ViewNode = BaseNode<'View', ViewProps>
+export type ViewNode = BaseNode<'View', ViewProps> & {
+	backgroundImageInstance: HTMLImageElement | null
+}
 export type RectNode = BaseNode<'Rect', RectProps>
+export type CircleNode = BaseNode<'Circle', CircleProps>
+export type PathNode = BaseNode<'Path', PathProps> & {
+	path2d: Path2D | null
+	pathSource: string | null
+}
+export type LineNode = BaseNode<'Line', LineProps>
 export type TextNode = BaseNode<'Text', TextProps>
-export type CanvasNode = ViewNode | RectNode | TextNode
+export type ImageNode = BaseNode<'Image', ImageProps> & {
+	imageInstance: HTMLImageElement | null
+}
+
+export type CanvasNode =
+	| ViewNode
+	| RectNode
+	| CircleNode
+	| PathNode
+	| LineNode
+	| TextNode
+	| ImageNode
 ```
 
 ## Runtime Types
@@ -317,7 +426,11 @@ declare global {
 		interface IntrinsicElements {
 			View: ViewProps
 			Rect: RectProps
+			Circle: CircleProps
+			Path: PathProps
+			Line: LineProps
 			Text: TextProps
+			Image: ImageProps
 		}
 	}
 }

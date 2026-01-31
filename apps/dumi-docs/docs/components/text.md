@@ -58,3 +58,13 @@ export default function Demo() {
 	)
 }
 ```
+
+## Props
+
+| Name      | Type        | Default | Description                           |
+| --------- | ----------- | ------- | ------------------------------------- |
+| text      | `string`    | -       | 文本内容（支持 `\\n`）                |
+| color     | `string`    | `#fff`  | 文本颜色                              |
+| maxWidth  | `number`    | -       | 测量时的最大宽度                      |
+| style     | `YogaStyle` | -       | 布局样式与字体样式（fontSize 等）     |
+| ...events | -           | -       | `onClick`, `onPointerDown/Move/Up` 等 |

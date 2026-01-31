@@ -1,5 +1,5 @@
 ---
-title: Rect width 受控实例
+title: Color 受控实例
 ---
 
 `Rect` 点击可更改

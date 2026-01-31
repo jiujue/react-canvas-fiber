@@ -86,3 +86,13 @@ export default function Demo() {
 	)
 }
 ```
+
+## 绘制相关 style
+
+以下字段不参与 Yoga 计算，但会影响绘制与命中：
+
+- `style.transform?: string | number[]`：2D 变换（translate/scale/rotate/skew/matrix）
+- `style.transformOrigin?: string`：变换原点（默认 center）
+- `style.opacity?: number`：透明度（0~1）
+- `style.overflow?: 'visible' | 'hidden'`：裁剪子内容（常用于配合圆角）
+- `style.zIndex?: number`：影响绘制与命中顺序（更大更靠上）

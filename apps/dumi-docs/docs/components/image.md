@@ -48,16 +48,18 @@ export default function Demo() {
 						<Text text="objectFit: contain" style={{ fontSize: 14 }} color="#94a3b8" />
 						<Image
 							src={src}
-							style={{ width: 200, height: 200, borderRadius: 16, background: '#1e293b' }}
+							style={{ width: 200, height: 200, background: '#1e293b' }}
+							borderRadius={16}
 							objectFit="contain"
 						/>
 					</View>
-					{/* Fill (Default) */}
+					{/* Fill */}
 					<View style={{ flexDirection: 'column', gap: 8 }}>
 						<Text text="objectFit: fill" style={{ fontSize: 14 }} color="#94a3b8" />
 						<Image
 							src={src}
-							style={{ width: 200, height: 200, borderRadius: 16 }}
+							style={{ width: 200, height: 200 }}
+							borderRadius={16}
 							objectFit="fill"
 						/>
 					</View>
@@ -74,10 +76,10 @@ export default function Demo() {
 
 ## Props
 
-| Name         | Type                             | Default  | Description                           |
-| ------------ | -------------------------------- | -------- | ------------------------------------- |
-| src          | `string`                         | -        | 图片地址                              |
-| objectFit    | `'cover' \| 'contain' \| 'fill'` | `'fill'` | 图片填充模式                          |
-| borderRadius | `number`                         | -        | 圆角半径                              |
-| style        | `YogaStyle`                      | -        | 布局样式，支持 width/height 等        |
-| ...events    | -                                | -        | `onClick`, `onPointerDown/Move/Up` 等 |
+| Name         | Type                             | Default     | Description                           |
+| ------------ | -------------------------------- | ----------- | ------------------------------------- |
+| src          | `string`                         | -           | 图片地址                              |
+| objectFit    | `'cover' \| 'contain' \| 'fill'` | `'contain'` | 图片填充模式                          |
+| borderRadius | `number`                         | -           | 圆角半径                              |
+| style        | `YogaStyle`                      | -           | 布局样式，支持 width/height 等        |
+| ...events    | -                                | -           | `onClick`, `onPointerDown/Move/Up` 等 |
