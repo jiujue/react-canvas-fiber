@@ -172,6 +172,65 @@ DevTools 验证：
 - **Performance**：观察 Raster / GPU / Compositor 线程是否饱和
 - **Memory**：观察 JS heap、图片解码与纹理占用（更偏系统层）
 
+### 3.5 当前实现中“性能不佳”的常见直接原因（代码级）
+
+这一节把“为什么慢”落到当前代码的真实路径上，便于你对照 profiling 与 DevTools 录制快速锁定问题：
+
+#### 3.5.1 每次 React commit 都默认触发布局 + 全量重绘
+
+- `reconciler.ts` 的 `resetAfterCommit` 直接调用 `container.invalidate()`（而不是按变化类型决定 `invalidateDrawOnly()` 或 `invalidate()`）
+- `root.ts` 的 `invalidate()` 会把 `dirtyLayout=true` 且 `dirtyDraw=true`，下一帧必然执行 `layoutTree -> drawTree`
+
+影响：
+
+- 任何小的 props 变化（例如颜色、透明度）都会付出 Yoga + 全 Canvas 清屏重绘的成本
+- 对动画/拖拽/高频交互尤其不友好（每帧都在跑 Yoga）
+
+#### 3.5.2 Yoga 布局阶段做了“整棵树”的结构重建与样式重刷
+
+- `layoutTree.ts` 的 `syncYogaTree` 当前策略是：
+  - 先递归 `clearLinks`，把整棵树所有 yoga parent-child 关系 detach 掉
+  - 再 DFS 重新 `insertChild` 并对每个节点 `applyYogaStyle`
+
+影响：
+
+- 即使只改了一个节点样式，也会对整棵树做一次结构层面的 O(N) 操作
+- Yoga 内部的增量能力很难发挥（因为关系每次都被整体拆掉重建）
+
+#### 3.5.3 Text 测量与 Text 绘制都存在“父链向上查找”的重复开销
+
+- `layoutTree.ts` Text 的 `setMeasureFunc` 每次测量都会 `resolveInheritedTextStyle` 向上找字体相关属性
+- `drawTree.ts` 绘制 Text 时也会 `resolveInheritedTextStyle` 再走一遍父链
+
+影响：
+
+- 大量 Text 节点 + 深层嵌套时，CPU 开销按 `Text 数量 * 树深度` 放大
+- 测量还会触发 `ctx.measureText`（主线程同步调用）
+
+#### 3.5.4 draw pass 全量遍历与高频状态切换
+
+- `drawTree.ts` 每帧默认 `clearRect/fillRect` 清屏，再从 root DFS 全量绘制
+- 每个节点会 `ctx.save/restore`、`translate`、可选 `transform`、可选 `clip`
+
+影响：
+
+- 节点多时，`save/restore/clip` 的数量会快速膨胀
+- Canvas2D 的 clip/路径栅格化会影响浏览器内部 raster 成本（这部分不在 JS profile 里，但会在 Performance 的 Raster/GPU 线程表现出来）
+
+#### 3.5.5 pointermove 命中测试与 hover enter/leave 的额外代价
+
+- `root.ts` 的命中测试是 DFS；Path 命中在需要时会走 `ctx.isPointInPath / isPointInStroke`
+- hover enter/leave 的链差分使用 `includes`（链长大时是 O(n^2) 级别的比较）
+
+影响：
+
+- 鼠标移动频繁时，事件侧 CPU 抢占主线程预算，间接拖慢渲染
+
+#### 3.5.6 大尺寸 + 高 DPR 直接放大带宽与清屏成本
+
+- canvas backing store 大小为 `(width*dpr) * (height*dpr)`，像素数按 dpr 的平方增长
+- 每帧清屏 + 大面积半透明覆盖会造成明显的 overdraw 与带宽压力
+
 ## 4. 浏览器侧“几何/光栅化/像素级”验证方法（推荐流程）
 
 由于 Canvas2D 的几何细分、光栅化、像素处理都在浏览器内部完成，推荐用以下方法拿到“实际执行情况”：
@@ -193,6 +252,37 @@ DevTools 验证：
   - 现状：Text 的 Yoga measure 会频繁调用 `ctx.measureText`
   - 方案：按 `(text,font,maxWidth)` 做 LRU 缓存；对大段文本做分段/惰性测量
 
+### 5.1.1（高收益）把“布局变化”与“绘制变化”做细粒度区分
+
+目标：让绝大多数“仅绘制变化”的更新不再跑 Yoga。
+
+建议落地方式：
+
+- 在 reconciler 的 `prepareUpdate` 做轻量 diff，输出 `UpdatePayload`：
+  - `needsLayout: boolean`（style 中影响布局的字段变了、Text 的 text/maxWidth 变了、结构变更）
+  - `needsDraw: boolean`（颜色/opacity/stroke/image src/transform 等）
+- 在 `commitUpdate` / `resetAfterCommit` 按 payload 调用：
+  - `container.invalidate()`（needsLayout）
+  - `container.invalidateDrawOnly()`（仅 needsDraw）
+
+这一步通常是“显著提升性能”的第一杠杆：把 layout pass 从每帧/每次 commit 降到真正需要时才执行。
+
+### 5.1.2（高收益）避免每次 layout 都重建整棵 Yoga 树
+
+目标：让 Yoga 的结构与样式更新尽可能“增量化”。
+
+可选路径（从易到难）：
+
+- **路径 A：结构增量、样式增量**
+  - 在 `appendChild/insertBefore/removeChild` 时同步维护 `yogaNode` 的 parent-child 关系
+  - 在 `commitUpdate` 里只对该节点 `applyYogaStyle`（必要时 markDirty）
+  - layout 时不再做 `detachAll + 重新 insert`，只 `calculateLayout` 与回写 computed layout
+- **路径 B：保留现有 sync，但加入版本/跳过机制**
+  - 维护节点/子树的“结构版本号”和“样式版本号”
+  - layout 时只对发生结构变化的子树做 detach/insert，对无变化子树跳过
+
+### 5.2 降低 draw 指令数量（减少 overdraw / state switch）
+
 ### 5.2 降低 draw 指令数量（减少 overdraw / state switch）
 
 - **减少深层嵌套**：降低 `ctx.save/restore` 链路长度
@@ -202,10 +292,52 @@ DevTools 验证：
   - 适用：复杂但不变的 UI 片段（阴影/圆角/大量路径）
   - 方案：用 `OffscreenCanvas` 或隐藏 canvas 作为缓存位图，变化时才重绘
 
+### 5.2.1（高收益）引入“层级缓存 / 位图缓存”提升上限
+
+Canvas2D 的全量重绘在节点规模上去后会很快到瓶颈。要显著提升上限，通常需要引入缓存：
+
+- **Layer 作为缓存边界**：把 `Layer` 视为“离屏缓冲区”
+  - Layer 内部重绘到 offscreen canvas（或普通 canvas）
+  - 主画布只需 `drawImage(layerCanvas, ...)` 合成
+  - 仅当 Layer 子树发生 dirty 时才重绘该 Layer
+- **静态子树缓存**：对不变的 Group/View 子树做 bitmap cache
+
+这样做的核心收益是：把“每帧 O(全树节点数)”变成“每帧 O(变化子树节点数 + Layer 合成数)”。
+
+### 5.2.2（中收益）缓存 transform / border / pattern 等解析结果
+
+可直接降低 JS 侧开销与 GC 压力：
+
+- `parseTransform(style.transform)`：按引用或按字符串缓存
+- `resolveInheritedTextStyle`：把继承结果缓存到节点（在父字体相关属性变化时失效）
+- `resolveBorder(border)`：从“字符串解析”改成预解析结构，或把解析结果缓存到节点
+- 背景图 pattern：避免每帧 `createPattern + DOMMatrix`（可按 image+size+repeat 缓存）
+
+### 5.3 图片与带宽
+
 ### 5.3 图片与带宽
 
 - **按需缩放解码**：避免把远大于显示尺寸的图片直接解码后频繁 drawImage
 - **控制 DPR**：对非关键画面可降低 dpr（典型换带宽换清晰度）
+
+### 5.4（高收益）事件与命中测试优化（交互场景）
+
+当交互频繁且节点多时，事件侧优化能明显降低掉帧：
+
+- **先 AABB 再精确命中**：对 Path/Line 等精确命中前先用包围盒快速排除
+- **空间索引**：为可交互节点建立 grid/quadtree，pointermove 只查局部候选
+- **hover 链差分优化**：把 `includes` 改为基于 `Set` 的差分，避免 O(n^2)
+
+### 5.5 推荐的优化实施优先级（显著提升）
+
+按“改动成本 / 收益”排序：
+
+1. **细粒度 dirty（layout vs draw）**：让绝大多数更新不跑 Yoga
+2. **Yoga 增量同步**：去掉 `syncYogaTree` 的全树重建
+3. **Layer/静态子树缓存**：把全量重绘变成局部重绘 + 合成
+4. **Text 测量与字体继承缓存**：降低 Text 密集场景 CPU
+5. **事件命中与 hover 优化**：提升交互稳定性
+6. **自适应 DPR**：在性能不足时平滑降分辨率维持流畅
 
 ## 6. 指标对照表（你关心的 KPI 如何在本项目落地）
 

@@ -75,6 +75,19 @@ graph TB
   - 每帧执行：`layoutTree -> drawTree`
   - `measureText` 用 `ctx.measureText` 做最小测量实现
 
+### rAF 合帧与脏标记
+
+运行时 root 内部维护两类“脏”：
+
+- `dirtyLayout`：需要重新跑 Yoga 布局（会隐含触发一次 draw）
+- `dirtyDraw`：只需要重新绘制（例如滚动、hover overlay）
+
+当前行为的关键点：
+
+- React 每次 commit 后会调用 `container.invalidate()`，直接把 `dirtyLayout=true` 与 `dirtyDraw=true`（等价于“每次更新都做 layout + draw”）
+- `invalidateDrawOnly()` 只置 `dirtyDraw=true`，不会触发 Yoga
+- rAF 合帧：同一帧内多次 `invalidate` 只会安排一次 `requestAnimationFrame`
+
 ## 对外 API
 
 - `packages/react-canvas-fiber/src/components/Canvas.tsx`
@@ -83,6 +96,60 @@ graph TB
   - `View/Rect/Text` 的 props 定义与 JSX 工厂（返回 intrinsic element）
 - `packages/react-canvas-fiber/src/intrinsics.d.ts`
   - 让 TS 在用户侧识别 `<View /> <Rect /> <Text />`
+
+### JSX 声明式 Canvas UI 的工作方式
+
+本项目的 JSX “声明式”本质是：
+
+- 用户写 `<View /> <Text /> <Rect />` 这类“自定义 intrinsic element”
+- React 在 reconciler 内部把它们当作 host component（字符串 type）
+- 自定义 renderer 的 `createInstance(type, props)` 将其实例化为场景树节点 `CanvasNode`
+- 每次 commit 后下一帧统一跑 `layoutTree(rootNode) -> drawTree(rootNode)`
+
+在用户侧，它看起来像普通 React UI：
+
+```tsx
+import { Canvas, View, Text, Rect } from '@jiujue/react-canvas-fiber'
+
+export function App() {
+	return (
+		<Canvas width={800} height={600} dpr={window.devicePixelRatio}>
+			<View style={{ width: 800, height: 600, paddingTop: 20 }} background="#111827">
+				<Text text="Hello Canvas UI" color="#fff" />
+				<Rect style={{ width: 200, height: 80, marginTop: 12 }} fill="#3b82f6" />
+			</View>
+		</Canvas>
+	)
+}
+```
+
+但在实现上：
+
+- `<Canvas />` 负责 DOM canvas 的创建、事件监听与 root 生命周期
+- `<View/> <Text/> ...` 不会渲染到 DOM，它们只产生 React element，由 renderer 接管
+
+### 事件系统（命中测试 + 派发）
+
+事件入口在 Canvas DOM 节点：
+
+- `Canvas.tsx` 将 pointer/wheel 事件转为“画布逻辑坐标”，交给 `root.dispatchPointerEvent / dispatchWheelEvent`
+
+命中测试与事件派发在运行时 root：
+
+- `root.ts`
+  - `hitTestTree(...)`：基于 `layout + transform + clip/scroll` 的 DFS 命中测试
+  - `dispatchOnPath(...)`：构造冒泡路径，支持 capture/bubble 以及 `stopPropagation / preventDefault`
+  - 滚动条交互：对 scroll 容器额外做 scrollbar thumb 的命中与拖拽逻辑
+
+需要注意：
+
+- Path 的命中在必要时会走 `ctx.isPointInPath / isPointInStroke`（相对更重）
+- pointermove 会触发 hover enter/leave 模拟，需要避免在复杂场景下做过多额外工作
+
+### Devtools 与性能采样
+
+- `root.ts` 会在浏览器里注册到 `window.__REACT_CANVAS_FIBER_DEVTOOLS__`，提供 snapshot、node props、命中测试等能力
+- 若 `<Canvas profiling />` 开启 profiling，会记录每帧 `layoutMs/drawMs/overlayMs` 与 Canvas API 调用计数，便于定位瓶颈
 
 ## 扩展点（后续常见需求）
 
