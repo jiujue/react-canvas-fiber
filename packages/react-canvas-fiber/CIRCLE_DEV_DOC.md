@@ -26,16 +26,16 @@
 
 ### 1.3 技术可行性分析
 
-- 渲染层已有 Rect/Text/Image 分支，可按同模式扩展 [drawTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawTree.ts)
-- 事件命中当前为 AABB（轴对齐包围盒）命中，可对 Circle 增加椭圆命中判定而不破坏其他节点 [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
-- 布局层基于 Yoga，对节点类型无强绑定；只要拥有 style 即可参与布局 [layoutTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/layout/layoutTree.ts)
+- 渲染层已有 Rect/Text/Image 分支，可按同模式扩展 [drawTree.ts](../src/render/drawTree.ts)
+- 事件命中当前为 AABB（轴对齐包围盒）命中，可对 Circle 增加椭圆命中判定而不破坏其他节点 [root.ts](../src/runtime/root.ts)
+- 布局层基于 Yoga，对节点类型无强绑定；只要拥有 style 即可参与布局 [layoutTree.ts](../src/layout/layoutTree.ts)
 
 ### 1.4 与其他模块依赖关系
 
-- React Reconciler：创建/更新节点 [reconciler.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/reconciler.ts)
-- Yoga Layout：为 Circle 计算 x/y/width/height [layoutTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/layout/layoutTree.ts)
-- Canvas2D 绘制：根据 layout 绘制椭圆 [drawTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawTree.ts)
-- Pointer 事件系统：命中测试与事件派发 [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+- React Reconciler：创建/更新节点 [reconciler.ts](../src/runtime/reconciler.ts)
+- Yoga Layout：为 Circle 计算 x/y/width/height [layoutTree.ts](../src/layout/layoutTree.ts)
+- Canvas2D 绘制：根据 layout 绘制椭圆 [drawTree.ts](../src/render/drawTree.ts)
+- Pointer 事件系统：命中测试与事件派发 [root.ts](../src/runtime/root.ts)
 
 ### 1.5 初步技术方案对比与选择理由
 
@@ -147,9 +147,9 @@ Dispatch-->>DOM: user handlers executed
 
 关联定义：
 
-- [types/jsx.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/jsx.ts)
-- [intrinsics.d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/intrinsics.d.ts)
-- [src/index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/index.ts)
+- [types/jsx.ts](../src/types/jsx.ts)
+- [intrinsics.d.ts](../src/intrinsics.d.ts)
+- [src/index.ts](../src/index.ts)
 
 ### 2.6 数据结构设计
 
@@ -159,7 +159,7 @@ Dispatch-->>DOM: user handlers executed
 
 定义位置：
 
-- [types/nodes.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/nodes.ts)
+- [types/nodes.ts](../src/types/nodes.ts)
 
 ### 2.7 算法选择与正确性
 
@@ -171,7 +171,7 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [drawTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawTree.ts)
+- [drawTree.ts](../src/render/drawTree.ts)
 
 #### 命中算法
 
@@ -183,7 +183,7 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+- [root.ts](../src/runtime/root.ts)
 
 ### 2.8 性能考虑
 
@@ -204,65 +204,65 @@ Dispatch-->>DOM: user handlers executed
 #### 变更批次 #1（2026-01-29）
 
 - 新增：`CircleProps`
-  - 文件：[jsx.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/jsx.ts)
+  - 文件：[jsx.ts](../src/types/jsx.ts)
   - 原因：对齐 Rect 的 fill/stroke/lineWidth 与事件 props
   - 影响范围：类型系统、JSX intrinsic 定义
 
 - 新增：`NodeType` 增加 `'Circle'`，并新增 `CircleNode`、更新 `CanvasNode` 联合类型
-  - 文件：[nodes.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/nodes.ts)
+  - 文件：[nodes.ts](../src/types/nodes.ts)
   - 原因：运行时与绘制层需要可区分 Circle 分支
   - 影响范围：所有引用 NodeType/CanvasNode 的模块
 
 - 更新：对外类型导出
-  - 文件：[types/index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/index.ts)
+  - 文件：[types/index.ts](../src/types/index.ts)
   - 原因：让用户侧可直接 import CircleProps 等类型
 
 - 更新：intrinsic elements 注册 Circle
-  - 文件：[intrinsics.d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/intrinsics.d.ts)
+  - 文件：[intrinsics.d.ts](../src/intrinsics.d.ts)
   - 原因：让 TS 能识别 `<Circle />`
 
 - 更新：JSX 包装组件与入口导出
-  - 文件：[jsx/index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/jsx/index.ts)、[index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/index.ts)
+  - 文件：[jsx/index.ts](../src/jsx/index.ts)、[index.ts](../src/index.ts)
   - 原因：对齐 View/Rect/Text/Image 的使用方式
 
 - 新增：Circle 绘制分支
-  - 文件：[drawTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawTree.ts)
+  - 文件：[drawTree.ts](../src/render/drawTree.ts)
   - 原因：Canvas2D 需要绘制椭圆
 
 - 新增：Circle 命中测试分支
-  - 文件：[root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+  - 文件：[root.ts](../src/runtime/root.ts)
   - 原因：Rect 命中为 AABB，Circle 需要椭圆命中精度
 
 - 集成示例：demo 增加 Circle 展示块
-  - 文件：[FeatureDemo.tsx](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/demo/src/demos/FeatureDemo.tsx)
+  - 文件：[FeatureDemo.tsx](../..//apps/demo/src/demos/FeatureDemo.tsx)
   - 原因：提供肉眼可见的集成回归点
 
 #### 变更批次 #2（2026-01-29）
 
 - 文档：dumi 新增 Circle 组件页
-  - 文件：[circle.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/components/circle.md)
+  - 文件：[circle.md](../..//apps/dumi-docs/docs/components/circle.md)
   - 原因：补齐 Circle API/示例与可视化预览
 
 - 文档：dumi 侧边栏加入 Circle 与 Image
-  - 文件：[.dumirc.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/.dumirc.ts)
+  - 文件：[.dumirc.ts](../..//apps/dumi-docs/.dumirc.ts)
   - 原因：让新组件与已存在的 Image 出现在导航中
 
 - 文档：Getting Started 示例与概念说明补充 Circle
-  - 文件：[getting-started.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/guide/getting-started.md)
+  - 文件：[getting-started.md](../..//apps/dumi-docs/docs/guide/getting-started.md)
   - 原因：入口文档与能力集合保持一致
 
 - 文档：Events 支持列表补充 Circle
-  - 文件：[events.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/guide/events.md)
+  - 文件：[events.md](../..//apps/dumi-docs/docs/guide/events.md)
   - 原因：事件能力覆盖所有可交互图元
 
 - 文档：类型页补充 CircleProps 与导出列表
-  - 文件：[index.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/types/index.md)
+  - 文件：[index.md](../..//apps/dumi-docs/docs/types/index.md)
   - 原因：对外类型与源码导出保持同步
 
 #### 变更批次 #3（2026-01-29）
 
 - 文档：Image 组件页修复示例图片资源失效
-  - 文件：[image.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/components/image.md)
+  - 文件：[image.md](../..//apps/dumi-docs/docs/components/image.md)
   - 原因：原示例图片外链不可用，导致页面只展示文字；替换为稳定的公开图片源（Unsplash）
 
 ### 3.2 测试用例记录
@@ -275,8 +275,8 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [circle.types.test.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tests/circle.types.test.ts)
-- 配套编译配置：[tsconfig.test.json](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tsconfig.test.json)
+- [circle.types.test.ts](../tests/circle.types.test.ts)
+- 配套编译配置：[tsconfig.test.json](../tsconfig.test.json)
 
 #### 集成用例（demo 构建 + 运行）
 
@@ -285,7 +285,7 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [FeatureDemo.tsx](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/demo/src/demos/FeatureDemo.tsx)
+- [FeatureDemo.tsx](../..//apps/demo/src/demos/FeatureDemo.tsx)
 
 ## 4. 架构影响分析
 

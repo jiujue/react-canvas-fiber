@@ -4,6 +4,7 @@
 	"version": "0.0.14",
 	"type": "module",
 	"scripts": {
+		"predev": "pnpm -C ../../packages/react-canvas-fiber build",
 		"dev": "vite",
 		"prebuild": "pnpm -C ../../packages/react-canvas-fiber build",
 		"build": "tsc -b && vite build",
@@ -13,7 +14,8 @@
 	"dependencies": {
 		"@jiujue/react-canvas-fiber": "workspace:*",
 		"react": "^18.2.0",
-		"react-dom": "^18.2.0"
+		"react-dom": "^18.2.0",
+		"react-router-dom": "^6.28.0"
 	},
 	"devDependencies": {
 		"@types/react": "^18.2.48",

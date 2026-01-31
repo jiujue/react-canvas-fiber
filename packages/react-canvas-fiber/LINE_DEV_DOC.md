@@ -26,16 +26,16 @@
 
 ### 1.3 技术可行性分析
 
-- 绘制层新增一个 O(1) 分支：beginPath/moveTo/lineTo/stroke [drawPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawPrimitives.ts)
-- 命中测试可使用点到线段的最短距离（常数计算），并在 AABB 初筛后执行 [hitTestPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/hitTestPrimitives.ts)
-- 布局层无需新增逻辑：Line 作为普通节点参与 Yoga [layoutTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/layout/layoutTree.ts)
+- 绘制层新增一个 O(1) 分支：beginPath/moveTo/lineTo/stroke [drawPrimitives.ts](../src/render/drawPrimitives.ts)
+- 命中测试可使用点到线段的最短距离（常数计算），并在 AABB 初筛后执行 [hitTestPrimitives.ts](../src/runtime/hitTestPrimitives.ts)
+- 布局层无需新增逻辑：Line 作为普通节点参与 Yoga [layoutTree.ts](../src/layout/layoutTree.ts)
 
 ### 1.4 与其他模块依赖关系
 
-- React Reconciler：创建/更新节点 [reconciler.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/reconciler.ts)
-- Yoga Layout：为 Line 计算 x/y/width/height [layoutTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/layout/layoutTree.ts)
-- Canvas2D 绘制：lineCap/lineWidth + stroke [drawPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawPrimitives.ts)
-- Pointer 事件系统：AABB 初筛 + 线段距离阈值判定 [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+- React Reconciler：创建/更新节点 [reconciler.ts](../src/runtime/reconciler.ts)
+- Yoga Layout：为 Line 计算 x/y/width/height [layoutTree.ts](../src/layout/layoutTree.ts)
+- Canvas2D 绘制：lineCap/lineWidth + stroke [drawPrimitives.ts](../src/render/drawPrimitives.ts)
+- Pointer 事件系统：AABB 初筛 + 线段距离阈值判定 [root.ts](../src/runtime/root.ts)
 
 ### 1.5 初步技术方案对比与选择理由
 
@@ -120,9 +120,9 @@ Dispatch-->>DOM: user handlers executed
 
 关联定义：
 
-- [types/jsx.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/jsx.ts)
-- [intrinsics.d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/intrinsics.d.ts)
-- [src/index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/index.ts)
+- [types/jsx.ts](../src/types/jsx.ts)
+- [intrinsics.d.ts](../src/intrinsics.d.ts)
+- [src/index.ts](../src/index.ts)
 
 ### 2.6 数据结构设计
 
@@ -132,7 +132,7 @@ Dispatch-->>DOM: user handlers executed
 
 定义位置：
 
-- [types/nodes.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/nodes.ts)
+- [types/nodes.ts](../src/types/nodes.ts)
 
 ### 2.7 算法选择与正确性
 
@@ -143,7 +143,7 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [drawPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawPrimitives.ts)
+- [drawPrimitives.ts](../src/render/drawPrimitives.ts)
 
 #### 命中算法
 
@@ -155,8 +155,8 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [hitTestPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/hitTestPrimitives.ts)
-- [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+- [hitTestPrimitives.ts](../src/runtime/hitTestPrimitives.ts)
+- [root.ts](../src/runtime/root.ts)
 
 ### 2.8 性能考虑
 
@@ -182,26 +182,26 @@ Dispatch-->>DOM: user handlers executed
 #### 变更批次 #1（2026-01-30）
 
 - 新增：`LineProps`
-  - 文件：[jsx.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/jsx.ts)
+  - 文件：[jsx.ts](../src/types/jsx.ts)
   - 原因：对齐 Rect/Circle 的事件 props，并补齐线段绘制参数
 
 - 新增：`NodeType` 增加 `'Line'`，并新增 `LineNode`、更新 `CanvasNode` 联合类型
-  - 文件：[nodes.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/nodes.ts)
+  - 文件：[nodes.ts](../src/types/nodes.ts)
 
 - 更新：intrinsic elements 注册 Line
-  - 文件：[intrinsics.d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/intrinsics.d.ts)
+  - 文件：[intrinsics.d.ts](../src/intrinsics.d.ts)
 
 - 更新：JSX 包装组件与入口导出
-  - 文件：[jsx/index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/jsx/index.ts)、[index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/index.ts)
+  - 文件：[jsx/index.ts](../src/jsx/index.ts)、[index.ts](../src/index.ts)
 
 - 新增：Line 绘制分支
-  - 文件：[drawPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawPrimitives.ts)、[drawTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawTree.ts)
+  - 文件：[drawPrimitives.ts](../src/render/drawPrimitives.ts)、[drawTree.ts](../src/render/drawTree.ts)
 
 - 新增：Line 命中测试分支
-  - 文件：[hitTestPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/hitTestPrimitives.ts)、[root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+  - 文件：[hitTestPrimitives.ts](../src/runtime/hitTestPrimitives.ts)、[root.ts](../src/runtime/root.ts)
 
 - 集成：dumi 增加 Line 组件页
-  - 文件：[line.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/components/line.md)
+  - 文件：[line.md](../..//apps/dumi-docs/docs/components/line.md)
 
 ### 3.2 测试用例记录
 
@@ -213,7 +213,7 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [line.types.test.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tests/line.types.test.ts)
+- [line.types.test.ts](../tests/line.types.test.ts)
 
 #### 单元测试（行为/覆盖率）
 
@@ -222,15 +222,15 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [hitTestPrimitives.spec.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tests/hitTestPrimitives.spec.ts)
-- [drawPrimitives.spec.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tests/drawPrimitives.spec.ts)
+- [hitTestPrimitives.spec.ts](../tests/hitTestPrimitives.spec.ts)
+- [drawPrimitives.spec.ts](../tests/drawPrimitives.spec.ts)
 
 #### 可视化验收（dumi）
 
 验收入口：
 
 - dumi 页面：Components/Line
-- 文件：[line.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/components/line.md)
+- 文件：[line.md](../..//apps/dumi-docs/docs/components/line.md)
 
 可视化验收标准：
 
@@ -245,7 +245,7 @@ Dispatch-->>DOM: user handlers executed
 
 配置位置：
 
-- [vitest.config.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/vitest.config.ts)
+- [vitest.config.ts](../vitest.config.ts)
 
 ## 4. 架构影响分析
 

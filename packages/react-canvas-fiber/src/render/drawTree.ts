@@ -299,6 +299,9 @@ function drawBackgroundImage(
  */
 function drawNode(state: DrawState, node: CanvasNode) {
 	const { ctx } = state
+	const perf = state.perf
+	perf?.count('node.total')
+	perf?.count(`node.${node.type}`)
 	const w = node.layout.width
 	const h = node.layout.height
 
@@ -352,13 +355,20 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		return ordered
 	}
 
+	perf?.count('ctx.save')
 	ctx.save()
+	perf?.count('ctx.translate')
 	ctx.translate(node.layout.x, node.layout.y)
-	if (opacity !== 1) ctx.globalAlpha *= opacity
+	if (opacity !== 1) {
+		perf?.count('ctx.globalAlpha.mul')
+		ctx.globalAlpha *= opacity
+	}
 
 	if (hasTransform) {
 		const origin = resolveTransformOrigin(style.transformOrigin, w, h)
+		perf?.count('ctx.translate', 2)
 		ctx.translate(origin.x, origin.y)
+		perf?.count('ctx.transform')
 		ctx.transform(
 			transformMatrix.a,
 			transformMatrix.b,
@@ -372,13 +382,18 @@ function drawNode(state: DrawState, node: CanvasNode) {
 
 	if (node.type === 'Group') {
 		if (overflowHidden) {
+			perf?.count('ctx.save')
 			ctx.save()
+			perf?.count('ctx.beginPath')
 			ctx.beginPath()
+			perf?.count('ctx.rect')
 			ctx.rect(0, 0, w, h)
+			perf?.count('ctx.clip')
 			ctx.clip()
 			for (const child of getOrderedChildren()) {
 				drawNode(state, child)
 			}
+			perf?.count('ctx.restore', 2)
 			ctx.restore()
 			ctx.restore()
 			return
@@ -387,6 +402,7 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		for (const child of getOrderedChildren()) {
 			drawNode(state, child)
 		}
+		perf?.count('ctx.restore')
 		ctx.restore()
 		return
 	}
@@ -411,10 +427,14 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		const maxScrollTop = Math.max(0, contentHeight - h)
 
 		if (background) {
+			perf?.count('ctx.save')
 			ctx.save()
+			perf?.count('ctx.fillStyle.set')
 			ctx.fillStyle = background
 			drawRoundedRect(ctx, 0, 0, w, h, viewRadius)
+			perf?.count('ctx.fill')
 			ctx.fill()
+			perf?.count('ctx.restore')
 			ctx.restore()
 		}
 
@@ -425,28 +445,37 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		}
 
 		if (overflowHidden && !scrollX && !scrollY) {
+			perf?.count('ctx.save')
 			ctx.save()
 			drawRoundedRect(ctx, 0, 0, w, h, viewRadius)
+			perf?.count('ctx.clip')
 			ctx.clip()
 			for (const child of getOrderedChildren()) {
 				drawNode(state, child)
 			}
+			perf?.count('ctx.restore')
 			ctx.restore()
 			if (viewBorder) drawBorder(ctx, 0, 0, w, h, viewRadius, viewBorder)
+			perf?.count('ctx.restore')
 			ctx.restore()
 			return
 		}
 
 		if (scrollX || scrollY) {
 			viewIsScroll = true
+			perf?.count('ctx.save')
 			ctx.save()
+			perf?.count('ctx.beginPath')
 			ctx.beginPath()
 			if (viewRadius > 0) {
 				drawRoundedRect(ctx, 0, 0, w, h, viewRadius)
 			} else {
+				perf?.count('ctx.rect')
 				ctx.rect(0, 0, w, h)
 			}
+			perf?.count('ctx.clip')
 			ctx.clip()
+			perf?.count('ctx.translate')
 			ctx.translate(-scrollLeft, -scrollTop)
 			const cullPadding = 1
 			const viewportX = scrollLeft - cullPadding
@@ -474,10 +503,12 @@ function drawNode(state: DrawState, node: CanvasNode) {
 						bounds.height,
 					)
 				) {
+					perf?.count('cull.skip')
 					continue
 				}
 				drawNode(state, child)
 			}
+			perf?.count('ctx.restore')
 			ctx.restore()
 
 			const corner = scrollbarInset + scrollbarWidth
@@ -498,13 +529,17 @@ function drawNode(state: DrawState, node: CanvasNode) {
 				const thumbY = travel > 0 ? trackY + (scrollTop / maxScrollTop) * travel : trackY
 				const radius = Math.min(6, scrollbarWidth / 2)
 
+				perf?.count('ctx.save')
 				ctx.save()
+				perf?.count('ctx.fillStyle.set', 2)
 				ctx.fillStyle = scrollbarTrackColor
 				drawRoundedRect(ctx, trackX, trackY, scrollbarWidth, trackH, radius)
+				perf?.count('ctx.fill', 2)
 				ctx.fill()
 				ctx.fillStyle = scrollbarThumbColor
 				drawRoundedRect(ctx, trackX, thumbY, scrollbarWidth, thumbH, radius)
 				ctx.fill()
+				perf?.count('ctx.restore')
 				ctx.restore()
 			}
 
@@ -524,17 +559,22 @@ function drawNode(state: DrawState, node: CanvasNode) {
 				const thumbX = travel > 0 ? trackX + (scrollLeft / maxScrollLeft) * travel : trackX
 				const radius = Math.min(6, scrollbarWidth / 2)
 
+				perf?.count('ctx.save')
 				ctx.save()
+				perf?.count('ctx.fillStyle.set', 2)
 				ctx.fillStyle = scrollbarTrackColor
 				drawRoundedRect(ctx, trackX, trackY, trackW, scrollbarWidth, radius)
+				perf?.count('ctx.fill', 2)
 				ctx.fill()
 				ctx.fillStyle = scrollbarThumbColor
 				drawRoundedRect(ctx, thumbX, trackY, thumbW, scrollbarWidth, radius)
 				ctx.fill()
+				perf?.count('ctx.restore')
 				ctx.restore()
 			}
 
 			if (viewBorder) drawBorder(ctx, 0, 0, w, h, viewRadius, viewBorder)
+			perf?.count('ctx.restore')
 			ctx.restore()
 			return
 		}
@@ -545,17 +585,24 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		const stroke = node.props.stroke
 		const lineWidth = node.props.lineWidth ?? 1
 		const radius = node.props.borderRadius ?? 0
+		perf?.count('ctx.save')
 		ctx.save()
 		drawRoundedRect(ctx, 0, 0, w, h, radius)
 		if (fill) {
+			perf?.count('ctx.fillStyle.set')
 			ctx.fillStyle = fill
+			perf?.count('ctx.fill')
 			ctx.fill()
 		}
 		if (stroke) {
+			perf?.count('ctx.strokeStyle.set')
 			ctx.strokeStyle = stroke
+			perf?.count('ctx.lineWidth.set')
 			ctx.lineWidth = lineWidth
+			perf?.count('ctx.stroke')
 			ctx.stroke()
 		}
+		perf?.count('ctx.restore')
 		ctx.restore()
 	}
 
@@ -568,42 +615,57 @@ function drawNode(state: DrawState, node: CanvasNode) {
 			const cy = h / 2
 			const rx = w / 2
 			const ry = h / 2
+			perf?.count('ctx.save')
 			ctx.save()
+			perf?.count('ctx.beginPath')
 			ctx.beginPath()
+			perf?.count('ctx.ellipse')
 			ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
 			if (fill) {
+				perf?.count('ctx.fillStyle.set')
 				ctx.fillStyle = fill
+				perf?.count('ctx.fill')
 				ctx.fill()
 			}
 			if (stroke) {
+				perf?.count('ctx.strokeStyle.set')
 				ctx.strokeStyle = stroke
+				perf?.count('ctx.lineWidth.set')
 				ctx.lineWidth = lineWidth
+				perf?.count('ctx.stroke')
 				ctx.stroke()
 			}
+			perf?.count('ctx.restore')
 			ctx.restore()
 		}
 	}
 
 	if (node.type === 'Path') {
-		drawPathNode(ctx, node as any, 0, 0)
+		drawPathNode(ctx, node as any, 0, 0, perf)
 	}
 
 	if (node.type === 'Line') {
-		drawLineNode(ctx, node as any, 0, 0, w, h)
+		drawLineNode(ctx, node as any, 0, 0, w, h, perf)
 	}
 
 	if (node.type === 'Text') {
 		const text = node.props.text
 		const color = node.props.color ?? '#ffffff'
 		const { font, lineHeight } = resolveInheritedTextStyle(node, state.defaults)
+		perf?.count('ctx.save')
 		ctx.save()
+		perf?.count('ctx.font.set')
 		ctx.font = font
+		perf?.count('ctx.fillStyle.set')
 		ctx.fillStyle = color
+		perf?.count('ctx.textBaseline.set')
 		ctx.textBaseline = 'top'
 		const lines = String(text).split('\n')
 		for (let i = 0; i < lines.length; i += 1) {
+			perf?.count('ctx.fillText')
 			ctx.fillText(lines[i], 0, i * lineHeight)
 		}
+		perf?.count('ctx.restore')
 		ctx.restore()
 	}
 
@@ -642,11 +704,16 @@ function drawNode(state: DrawState, node: CanvasNode) {
 				finalSrcH = h / ratio
 			}
 
+			perf?.count('ctx.save')
 			ctx.save()
+			perf?.count('ctx.beginPath')
 			ctx.beginPath()
 			drawRoundedRect(ctx, 0, 0, w, h, radius)
+			perf?.count('ctx.clip')
 			ctx.clip()
+			perf?.count('ctx.drawImage')
 			ctx.drawImage(imageInstance, srcX, srcY, finalSrcW, finalSrcH, dstX, dstY, dstW, dstH)
+			perf?.count('ctx.restore')
 			ctx.restore()
 		}
 	}
@@ -659,6 +726,7 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		drawBorder(ctx, 0, 0, w, h, viewRadius, viewBorder)
 	}
 
+	perf?.count('ctx.restore')
 	ctx.restore()
 }
 
@@ -673,21 +741,26 @@ export function drawTree(
 	dpr: number,
 	clearColor?: string,
 	defaults?: CanvasRootOptions,
+	perf?: { count: (name: string, delta?: number) => void },
 ) {
 	const w = ctx.canvas.width
 	const h = ctx.canvas.height
 	ctx.save()
 	if (clearColor) {
+		perf?.count('ctx.fillStyle.set')
 		ctx.fillStyle = clearColor
+		perf?.count('ctx.fillRect')
 		ctx.fillRect(0, 0, w, h)
 	} else {
+		perf?.count('ctx.clearRect')
 		ctx.clearRect(0, 0, w, h)
 	}
 	ctx.restore()
 
 	ctx.save()
+	perf?.count('ctx.setTransform')
 	ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-	const state: DrawState = { ctx, dpr, defaults }
+	const state: DrawState = { ctx, dpr, defaults, perf }
 	const rootChildren = root.children
 	let hasAnyZ = false
 	for (let i = 0; i < rootChildren.length; i += 1) {
@@ -697,6 +770,7 @@ export function drawTree(
 			break
 		}
 	}
+	if (hasAnyZ && rootChildren.length > 1) perf?.count('sort.root.zIndex')
 	const orderedRootChildren = hasAnyZ
 		? rootChildren
 				.map((child, index) => ({

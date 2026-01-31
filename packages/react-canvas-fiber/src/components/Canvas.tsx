@@ -146,6 +146,7 @@ export function Canvas(props: CanvasProps) {
 			fontSize: props.fontSize,
 			fontWeight: props.fontWeight,
 			lineHeight: props.lineHeight,
+			profiling: props.profiling,
 		})
 
 		return () => {
@@ -160,6 +161,7 @@ export function Canvas(props: CanvasProps) {
 		props.fontSize,
 		props.fontWeight,
 		props.lineHeight,
+		props.profiling,
 		dpr,
 	])
 

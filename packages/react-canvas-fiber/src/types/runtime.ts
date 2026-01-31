@@ -7,7 +7,10 @@ import type { RootNode } from './nodes'
 export type CanvasContainer = {
 	root: RootNode
 	invalidate: () => void
+	invalidateDrawOnly?: () => void
 	notifyCommit?: () => void
+	__rcfNeedsLayout?: boolean
+	__rcfNeedsDraw?: boolean
 }
 
 /**
@@ -22,6 +25,7 @@ export type CanvasRootOptions = {
 	fontSize?: number
 	fontWeight?: number | string
 	lineHeight?: number
+	profiling?: boolean | { maxFrames?: number; sceneSampleEveryNFrames?: number }
 }
 
 /**

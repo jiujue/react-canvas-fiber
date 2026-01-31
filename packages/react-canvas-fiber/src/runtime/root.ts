@@ -5,6 +5,7 @@ import { layoutTree } from '../layout'
 import { createReconcilerRoot } from './reconciler'
 import type { CanvasNode, RootNode } from './nodes'
 import type { CanvasPointerEventType, CanvasRootOptions, MeasureTextFn } from '../types'
+import { createCanvasProfiler } from './profiler'
 import {
 	IDENTITY_MATRIX,
 	applyToPoint,
@@ -248,13 +249,23 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	const ctx = canvas.getContext('2d')
 	if (!ctx) throw new Error('CanvasRenderingContext2D is not available')
 
+	const profiling = options.profiling
+	const profiler = profiling
+		? createCanvasProfiler(typeof profiling === 'object' ? profiling : undefined)
+		: null
+
 	/**
 	 * 容器根节点（不对应 JSX），其 children 是 React 渲染出来的顶层节点。
 	 */
 	const rootNode = createRootNode()
 
+	let containerRef: any = null
+	let pendingCommits = 0
+
 	const commitSubscribers = new Set<() => void>()
 	const notifyCommit = () => {
+		pendingCommits += 1
+		profiler?.markSceneDirty()
 		for (const cb of commitSubscribers) cb()
 	}
 
@@ -360,8 +371,17 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	 * - frameId：是否已安排下一帧
 	 */
 	let frameId: number | null = null
+	let running = false
+	let disposed = false
 	let dirtyLayout = true
 	let dirtyDraw = true
+	let frameErrorStreak = 0
+
+	const dispose = () => {
+		disposed = true
+		if (frameId != null) cancelAnimationFrame(frameId)
+		frameId = null
+	}
 
 	/**
 	 * Text 的 Yoga 测量依赖外部测量函数。
@@ -383,129 +403,231 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	 * 通知下一帧执行一次 layout + draw。
 	 * reconciler commit 完成后会调用它，从而把 React 更新“推”到画布渲染。
 	 */
-	const invalidate = () => {
-		dirtyLayout = true
-		dirtyDraw = true
+	const scheduleFrame = () => {
+		if (disposed || running) return
 		if (frameId != null) return
-		frameId = requestAnimationFrame(async () => {
-			frameId = null
-			if (!dirtyLayout && !dirtyDraw) return
-			const needsLayout = dirtyLayout
-			const needsDraw = dirtyDraw || dirtyLayout
-			dirtyLayout = false
-			dirtyDraw = false
-			if (needsLayout) {
-				await layoutTree(rootNode, options.width, options.height, measureText, options)
-			}
-			if (needsDraw) {
-				drawTree(rootNode, ctx, options.dpr, options.clearColor, options)
-			}
-			const overlayHover = typeof hoverId === 'number' ? findNodeById(hoverId) : null
-			const overlaySelected = typeof selectedId === 'number' ? findNodeById(selectedId) : null
-			if (overlayHover || overlaySelected) {
-				ctx.save()
-				ctx.setTransform(options.dpr, 0, 0, options.dpr, 0, 0)
-
-				if (
-					overlayHover &&
-					(!overlaySelected || overlayHover.debugId !== overlaySelected.debugId)
-				) {
-					const r = getAbsoluteRect(overlayHover)
-					ctx.save()
-					for (const clip of getScrollClipRects(overlayHover)) {
-						ctx.beginPath()
-						ctx.rect(clip.x, clip.y, clip.width, clip.height)
-						ctx.clip()
-					}
-					ctx.fillStyle = 'rgba(59,130,246,0.12)'
-					ctx.strokeStyle = 'rgba(59,130,246,0.9)'
-					ctx.lineWidth = 1
-					ctx.fillRect(r.x, r.y, r.width, r.height)
-					ctx.strokeRect(r.x + 0.5, r.y + 0.5, Math.max(0, r.width - 1), Math.max(0, r.height - 1))
-					ctx.restore()
-				}
-
-				if (overlaySelected) {
-					const r = getAbsoluteRect(overlaySelected)
-					ctx.save()
-					for (const clip of getScrollClipRects(overlaySelected)) {
-						ctx.beginPath()
-						ctx.rect(clip.x, clip.y, clip.width, clip.height)
-						ctx.clip()
-					}
-					ctx.fillStyle = 'rgba(16,185,129,0.12)'
-					ctx.strokeStyle = 'rgba(16,185,129,0.95)'
-					ctx.lineWidth = 2
-					ctx.fillRect(r.x, r.y, r.width, r.height)
-					ctx.strokeRect(r.x + 1, r.y + 1, Math.max(0, r.width - 2), Math.max(0, r.height - 2))
-					ctx.restore()
-				}
-
-				ctx.restore()
-			}
+		frameId = requestAnimationFrame(() => {
+			void runFrame()
 		})
 	}
 
-	const invalidateDrawOnly = () => {
-		dirtyDraw = true
-		if (frameId != null) return
-		frameId = requestAnimationFrame(async () => {
+	const runFrame = async () => {
+		if (disposed) {
 			frameId = null
+			return
+		}
+		profiler?.beginFrame()
+		frameId = null
+		running = true
+		try {
 			if (!dirtyLayout && !dirtyDraw) return
-			const needsLayout = dirtyLayout
-			const needsDraw = dirtyDraw || dirtyLayout
-			dirtyLayout = false
-			dirtyDraw = false
-			if (needsLayout) {
-				await layoutTree(rootNode, options.width, options.height, measureText, options)
+			try {
+				const needsLayout = dirtyLayout
+				const needsDraw = dirtyDraw || dirtyLayout
+				dirtyLayout = false
+				dirtyDraw = false
+				if (containerRef) {
+					containerRef.__rcfNeedsLayout = false
+					containerRef.__rcfNeedsDraw = false
+				}
+				if (profiler && pendingCommits) {
+					profiler.count('react.commit', pendingCommits)
+					pendingCommits = 0
+				}
+				if (needsLayout) {
+					profiler?.count('pass.layout')
+					if (profiler) {
+						await profiler.timeAsync('layoutMs', async () => {
+							await layoutTree(rootNode, options.width, options.height, measureText, options, {
+								isCancelled: () => disposed,
+							})
+						})
+					} else {
+						await layoutTree(rootNode, options.width, options.height, measureText, options, {
+							isCancelled: () => disposed,
+						})
+					}
+				}
+
+				if (disposed) return
+
+				if (needsDraw) {
+					profiler?.count('pass.draw')
+					if (profiler) {
+						profiler.timeSync('drawMs', () => {
+							drawTree(rootNode, ctx, options.dpr, options.clearColor, options, {
+								count: profiler.count,
+							})
+						})
+					} else {
+						drawTree(rootNode, ctx, options.dpr, options.clearColor, options)
+					}
+				}
+
+				if (disposed) return
+				frameErrorStreak = 0
+			} catch (err) {
+				void err
+				if (!disposed) {
+					frameErrorStreak += 1
+					if (frameErrorStreak < 3) {
+						dirtyLayout = true
+						dirtyDraw = true
+						if (containerRef) {
+							containerRef.__rcfNeedsLayout = true
+							containerRef.__rcfNeedsDraw = true
+						}
+					} else {
+						dirtyLayout = false
+						dirtyDraw = false
+					}
+				}
+				return
 			}
-			if (needsDraw) {
-				drawTree(rootNode, ctx, options.dpr, options.clearColor, options)
-			}
+
 			const overlayHover = typeof hoverId === 'number' ? findNodeById(hoverId) : null
 			const overlaySelected = typeof selectedId === 'number' ? findNodeById(selectedId) : null
 			if (overlayHover || overlaySelected) {
-				ctx.save()
-				ctx.setTransform(options.dpr, 0, 0, options.dpr, 0, 0)
-
-				if (
-					overlayHover &&
-					(!overlaySelected || overlayHover.debugId !== overlaySelected.debugId)
-				) {
-					const r = getAbsoluteRect(overlayHover)
+				profiler?.count('pass.overlay')
+				const perf = profiler ? { count: profiler.count } : null
+				const drawOverlay = () => {
+					perf?.count('ctx.save')
 					ctx.save()
-					for (const clip of getScrollClipRects(overlayHover)) {
-						ctx.beginPath()
-						ctx.rect(clip.x, clip.y, clip.width, clip.height)
-						ctx.clip()
+					perf?.count('ctx.setTransform')
+					ctx.setTransform(options.dpr, 0, 0, options.dpr, 0, 0)
+
+					if (
+						overlayHover &&
+						(!overlaySelected || overlayHover.debugId !== overlaySelected.debugId)
+					) {
+						const r = getAbsoluteRect(overlayHover)
+						perf?.count('ctx.save')
+						ctx.save()
+						for (const clip of getScrollClipRects(overlayHover)) {
+							perf?.count('ctx.beginPath')
+							ctx.beginPath()
+							perf?.count('ctx.rect')
+							ctx.rect(clip.x, clip.y, clip.width, clip.height)
+							perf?.count('ctx.clip')
+							ctx.clip()
+						}
+						perf?.count('ctx.fillStyle.set')
+						ctx.fillStyle = 'rgba(59,130,246,0.12)'
+						perf?.count('ctx.strokeStyle.set')
+						ctx.strokeStyle = 'rgba(59,130,246,0.9)'
+						perf?.count('ctx.lineWidth.set')
+						ctx.lineWidth = 1
+						perf?.count('ctx.fillRect')
+						ctx.fillRect(r.x, r.y, r.width, r.height)
+						perf?.count('ctx.strokeRect')
+						ctx.strokeRect(
+							r.x + 0.5,
+							r.y + 0.5,
+							Math.max(0, r.width - 1),
+							Math.max(0, r.height - 1),
+						)
+						perf?.count('ctx.restore')
+						ctx.restore()
 					}
-					ctx.fillStyle = 'rgba(59,130,246,0.12)'
-					ctx.strokeStyle = 'rgba(59,130,246,0.9)'
-					ctx.lineWidth = 1
-					ctx.fillRect(r.x, r.y, r.width, r.height)
-					ctx.strokeRect(r.x + 0.5, r.y + 0.5, Math.max(0, r.width - 1), Math.max(0, r.height - 1))
+
+					if (overlaySelected) {
+						const r = getAbsoluteRect(overlaySelected)
+						perf?.count('ctx.save')
+						ctx.save()
+						for (const clip of getScrollClipRects(overlaySelected)) {
+							perf?.count('ctx.beginPath')
+							ctx.beginPath()
+							perf?.count('ctx.rect')
+							ctx.rect(clip.x, clip.y, clip.width, clip.height)
+							perf?.count('ctx.clip')
+							ctx.clip()
+						}
+						perf?.count('ctx.fillStyle.set')
+						ctx.fillStyle = 'rgba(16,185,129,0.12)'
+						perf?.count('ctx.strokeStyle.set')
+						ctx.strokeStyle = 'rgba(16,185,129,0.95)'
+						perf?.count('ctx.lineWidth.set')
+						ctx.lineWidth = 2
+						perf?.count('ctx.fillRect')
+						ctx.fillRect(r.x, r.y, r.width, r.height)
+						perf?.count('ctx.strokeRect')
+						ctx.strokeRect(r.x + 1, r.y + 1, Math.max(0, r.width - 2), Math.max(0, r.height - 2))
+						perf?.count('ctx.restore')
+						ctx.restore()
+					}
+
+					perf?.count('ctx.restore')
 					ctx.restore()
 				}
 
-				if (overlaySelected) {
-					const r = getAbsoluteRect(overlaySelected)
-					ctx.save()
-					for (const clip of getScrollClipRects(overlaySelected)) {
-						ctx.beginPath()
-						ctx.rect(clip.x, clip.y, clip.width, clip.height)
-						ctx.clip()
-					}
-					ctx.fillStyle = 'rgba(16,185,129,0.12)'
-					ctx.strokeStyle = 'rgba(16,185,129,0.95)'
-					ctx.lineWidth = 2
-					ctx.fillRect(r.x, r.y, r.width, r.height)
-					ctx.strokeRect(r.x + 1, r.y + 1, Math.max(0, r.width - 2), Math.max(0, r.height - 2))
-					ctx.restore()
-				}
-
-				ctx.restore()
+				if (profiler) profiler.timeSync('overlayMs', drawOverlay)
+				else drawOverlay()
 			}
-		})
+
+			if (disposed) return
+
+			if (profiler && profiler.shouldSampleSceneThisFrame()) {
+				const nodesByType: Record<string, number> = Object.create(null)
+				let nodesTotal = 0
+				let imagesTotal = 0
+				let decodedImageBytes = 0
+
+				const addImage = (img: any) => {
+					if (!img) return
+					const w = img.naturalWidth ?? 0
+					const h = img.naturalHeight ?? 0
+					if (w > 0 && h > 0) decodedImageBytes += w * h * 4
+				}
+
+				const walk = (n: CanvasNode) => {
+					nodesTotal += 1
+					nodesByType[n.type] = (nodesByType[n.type] ?? 0) + 1
+					if (n.type === 'Image') {
+						imagesTotal += 1
+						addImage((n as any).imageInstance)
+					}
+					if (n.type === 'View' || n.type === 'Layer') {
+						const bg = (n as any).backgroundImageInstance
+						if (bg) {
+							imagesTotal += 1
+							addImage(bg)
+						}
+					}
+					for (const c of n.children) walk(c)
+				}
+				for (const c of rootNode.children) walk(c)
+
+				profiler.setSceneSnapshot({
+					nodesTotal,
+					nodesByType,
+					imagesTotal,
+					decodedImageBytes,
+					canvasBytes: ctx.canvas.width * ctx.canvas.height * 4,
+				})
+			}
+		} finally {
+			running = false
+			profiler?.endFrame()
+			if (!disposed && (dirtyLayout || dirtyDraw)) scheduleFrame()
+		}
+	}
+
+	const invalidate = () => {
+		if (disposed) return
+		dirtyLayout = true
+		dirtyDraw = true
+		if (containerRef) {
+			containerRef.__rcfNeedsLayout = true
+			containerRef.__rcfNeedsDraw = true
+		}
+		scheduleFrame()
+	}
+
+	const invalidateDrawOnly = () => {
+		if (disposed) return
+		dirtyDraw = true
+		if (containerRef) containerRef.__rcfNeedsDraw = true
+		scheduleFrame()
 	}
 
 	const getScrollbarMetricsY = (
@@ -1052,9 +1174,12 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	/**
 	 * React reconciler 的容器对象：RootNode + invalidate 回调。
 	 */
-	const container = { root: rootNode, invalidate, notifyCommit }
+	const container = { root: rootNode, invalidate, notifyCommit, invalidateDrawOnly }
+	;(container as any).__rcfNeedsLayout = true
+	;(container as any).__rcfNeedsDraw = true
+	containerRef = container
 	rootNode.container = container
-	const reconcilerRoot = createReconcilerRoot(container)
+	const reconcilerRoot = createReconcilerRoot(container as any)
 
 	/**
 	 * 先触发一次绘制，避免画布初始为空（即使 children 还没挂上）。
@@ -1126,6 +1251,15 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 			return () => {
 				commitSubscribers.delete(cb)
 			}
+		},
+		getPerformanceReport() {
+			return profiler?.getReport() ?? null
+		},
+		getPerformanceFrames() {
+			return profiler?.getFrames() ?? null
+		},
+		resetPerformance() {
+			profiler?.reset()
 		},
 	}
 
@@ -1288,6 +1422,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 			reconcilerRoot.render(element)
 		},
 		unmount() {
+			dispose()
 			reconcilerRoot.unmount()
 			if (typeof window !== 'undefined' && registryRootInstanceId != null) {
 				const w = window as any

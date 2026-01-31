@@ -189,4 +189,4 @@ export default function Demo() {
 
 ## Props
 
-`LayerProps = ViewProps`，参考 [View](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/components/view.md)。
+`LayerProps = ViewProps`，参考 [View](../../../dumi-docs/docs/components/view.md)。

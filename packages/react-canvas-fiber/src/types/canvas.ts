@@ -16,6 +16,7 @@ export type CanvasProps = {
 	fontSize?: number
 	fontWeight?: number | string
 	lineHeight?: number
+	profiling?: boolean | { maxFrames?: number; sceneSampleEveryNFrames?: number }
 	style?: CSSProperties
 	children?: ReactNode
 }

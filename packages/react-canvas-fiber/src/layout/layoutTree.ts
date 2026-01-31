@@ -256,8 +256,10 @@ export async function layoutTree(
 	height: number,
 	measureText: (text: string, font: string, maxWidth?: number) => { width: number; height: number },
 	defaults?: CanvasRootOptions,
+	control?: { isCancelled?: () => boolean },
 ) {
 	const engine = await getLayoutEngine()
+	if (control?.isCancelled?.()) return
 	if (!root.yogaNode) {
 		root.yogaNode = engine.yoga.Node.create()
 		root.yogaNode.setWidth(width)

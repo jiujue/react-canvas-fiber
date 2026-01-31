@@ -27,16 +27,16 @@
 
 ### 1.3 技术可行性分析
 
-- 绘制层可复用 Canvas2D `Path2D`，并对 `d` 进行缓存以避免重复解析 [path2d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/utils/path2d.ts)
-- 事件命中可复用 Canvas2D `isPointInPath / isPointInStroke`，在 AABB 初筛后执行精确判定 [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
-- 布局层基于 Yoga，与节点类型弱耦合；只要拥有 style 即可参与布局 [layoutTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/layout/layoutTree.ts)
+- 绘制层可复用 Canvas2D `Path2D`，并对 `d` 进行缓存以避免重复解析 [path2d.ts](../packages/react-canvas-fiber/src/utils/path2d.ts)
+- 事件命中可复用 Canvas2D `isPointInPath / isPointInStroke`，在 AABB 初筛后执行精确判定 [root.ts](../packages/react-canvas-fiber/src/runtime/root.ts)
+- 布局层基于 Yoga，与节点类型弱耦合；只要拥有 style 即可参与布局 [layoutTree.ts](../packages/react-canvas-fiber/src/layout/layoutTree.ts)
 
 ### 1.4 与其他模块依赖关系
 
-- React Reconciler：创建/更新节点 [reconciler.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/reconciler.ts)
-- Yoga Layout：为 Path 计算 x/y/width/height [layoutTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/layout/layoutTree.ts)
-- Canvas2D 绘制：Path2D + translate 绘制 [drawPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawPrimitives.ts)
-- Pointer 事件系统：AABB 初筛 + isPointInPath/isPointInStroke 命中 [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+- React Reconciler：创建/更新节点 [reconciler.ts](../packages/react-canvas-fiber/src/runtime/reconciler.ts)
+- Yoga Layout：为 Path 计算 x/y/width/height [layoutTree.ts](../packages/react-canvas-fiber/src/layout/layoutTree.ts)
+- Canvas2D 绘制：Path2D + translate 绘制 [drawPrimitives.ts](../packages/react-canvas-fiber/src/render/drawPrimitives.ts)
+- Pointer 事件系统：AABB 初筛 + isPointInPath/isPointInStroke 命中 [root.ts](../packages/react-canvas-fiber/src/runtime/root.ts)
 
 ### 1.5 初步技术方案对比与选择理由
 
@@ -126,9 +126,9 @@ Dispatch-->>DOM: user handlers executed
 
 关联定义：
 
-- [types/jsx.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/jsx.ts)
-- [intrinsics.d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/intrinsics.d.ts)
-- [src/index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/index.ts)
+- [types/jsx.ts](../packages/react-canvas-fiber/src/types/jsx.ts)
+- [intrinsics.d.ts](../packages/react-canvas-fiber/src/intrinsics.d.ts)
+- [src/index.ts](../packages/react-canvas-fiber/src/index.ts)
 
 ### 2.6 数据结构设计
 
@@ -138,8 +138,8 @@ Dispatch-->>DOM: user handlers executed
 
 定义位置：
 
-- [types/nodes.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/nodes.ts)
-- [runtime/nodes.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/nodes.ts)
+- [types/nodes.ts](../packages/react-canvas-fiber/src/types/nodes.ts)
+- [runtime/nodes.ts](../packages/react-canvas-fiber/src/runtime/nodes.ts)
 
 ### 2.7 算法选择与正确性
 
@@ -151,8 +151,8 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [drawPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawPrimitives.ts)
-- [path2d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/utils/path2d.ts)
+- [drawPrimitives.ts](../packages/react-canvas-fiber/src/render/drawPrimitives.ts)
+- [path2d.ts](../packages/react-canvas-fiber/src/utils/path2d.ts)
 
 #### 命中算法
 
@@ -163,7 +163,7 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+- [root.ts](../packages/react-canvas-fiber/src/runtime/root.ts)
 
 ### 2.8 性能考虑
 
@@ -190,30 +190,30 @@ Dispatch-->>DOM: user handlers executed
 #### 变更批次 #1（2026-01-30）
 
 - 新增：`PathProps`
-  - 文件：[jsx.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/jsx.ts)
+  - 文件：[jsx.ts](../packages/react-canvas-fiber/src/types/jsx.ts)
   - 原因：对齐 Circle/Rect 的 fill/stroke/lineWidth 与事件 props
 
 - 新增：`NodeType` 增加 `'Path'`，并新增 `PathNode`、更新 `CanvasNode` 联合类型
-  - 文件：[nodes.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/types/nodes.ts)
+  - 文件：[nodes.ts](../packages/react-canvas-fiber/src/types/nodes.ts)
   - 原因：运行时、绘制层与事件系统需要可区分 Path 分支
 
 - 更新：intrinsic elements 注册 Path
-  - 文件：[intrinsics.d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/intrinsics.d.ts)
+  - 文件：[intrinsics.d.ts](../packages/react-canvas-fiber/src/intrinsics.d.ts)
 
 - 更新：JSX 包装组件与入口导出
-  - 文件：[jsx/index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/jsx/index.ts)、[index.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/index.ts)
+  - 文件：[jsx/index.ts](../packages/react-canvas-fiber/src/jsx/index.ts)、[index.ts](../packages/react-canvas-fiber/src/index.ts)
 
 - 新增：Path2D 缓存工具
-  - 文件：[path2d.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/utils/path2d.ts)
+  - 文件：[path2d.ts](../packages/react-canvas-fiber/src/utils/path2d.ts)
 
 - 新增：Path 绘制分支
-  - 文件：[drawPrimitives.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawPrimitives.ts)、[drawTree.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/render/drawTree.ts)
+  - 文件：[drawPrimitives.ts](../packages/react-canvas-fiber/src/render/drawPrimitives.ts)、[drawTree.ts](../packages/react-canvas-fiber/src/render/drawTree.ts)
 
 - 新增：Path 命中测试分支
-  - 文件：[root.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/src/runtime/root.ts)
+  - 文件：[root.ts](../packages/react-canvas-fiber/src/runtime/root.ts)
 
 - 集成：dumi 增加 Path 组件页
-  - 文件：[path.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/components/path.md)
+  - 文件：[path.md](../apps/dumi-docs/docs/components/path.md)
 
 ### 3.2 测试用例记录
 
@@ -225,7 +225,7 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [path.types.test.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tests/path.types.test.ts)
+- [path.types.test.ts](../packages/react-canvas-fiber/tests/path.types.test.ts)
 
 #### 单元测试（行为/覆盖率）
 
@@ -234,15 +234,15 @@ Dispatch-->>DOM: user handlers executed
 
 实现位置：
 
-- [path2d.spec.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tests/path2d.spec.ts)
-- [drawPrimitives.spec.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/tests/drawPrimitives.spec.ts)
+- [path2d.spec.ts](../packages/react-canvas-fiber/tests/path2d.spec.ts)
+- [drawPrimitives.spec.ts](../packages/react-canvas-fiber/tests/drawPrimitives.spec.ts)
 
 #### 可视化验收（dumi）
 
 验收入口：
 
 - dumi 页面：Components/Path
-- 文件：[path.md](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/apps/dumi-docs/docs/components/path.md)
+- 文件：[path.md](../apps/dumi-docs/docs/components/path.md)
 
 可视化验收标准：
 
@@ -258,7 +258,7 @@ Dispatch-->>DOM: user handlers executed
 
 配置位置：
 
-- [vitest.config.ts](file:///Users/jiujue/Documents/workspace/webWorkSpace/react-canvas-fiber/packages/react-canvas-fiber/vitest.config.ts)
+- [vitest.config.ts](../packages/react-canvas-fiber/vitest.config.ts)
 
 ## 4. 架构影响分析
 
