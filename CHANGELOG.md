@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.4
+
+### Patch Changes
+
+- 26aab82: feat(core): add layer,group cnp
+
 ## Unreleased
 
 ### Patch Changes
