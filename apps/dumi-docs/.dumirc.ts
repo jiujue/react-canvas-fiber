@@ -61,6 +61,8 @@ export default defineConfig({
 					children: [
 						{ title: 'Canvas', link: '/components/canvas' },
 						{ title: 'View', link: '/components/view' },
+						{ title: 'Group', link: '/components/group' },
+						{ title: 'Layer', link: '/components/layer' },
 						{ title: 'Rect', link: '/components/rect' },
 						{ title: 'Circle', link: '/components/circle' },
 						{ title: 'Path', link: '/components/path' },

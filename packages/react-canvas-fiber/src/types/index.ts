@@ -3,7 +3,9 @@ export type { LayoutEngine } from './layout'
 export type {
 	CanvasNode,
 	CircleNode,
+	GroupNode,
 	ImageNode,
+	LayerNode,
 	Layout,
 	LineNode,
 	NodeType,
@@ -18,6 +20,8 @@ export type {
 	CanvasPointerEventHandler,
 	CanvasPointerEventType,
 	CircleProps,
+	GroupProps,
+	LayerProps,
 	LineProps,
 	PathProps,
 	PointerEventsMode,

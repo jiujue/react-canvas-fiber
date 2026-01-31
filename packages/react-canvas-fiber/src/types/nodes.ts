@@ -1,7 +1,9 @@
 import type { CanvasContainer } from './runtime'
 import type {
 	CircleProps,
+	GroupProps,
 	ImageProps,
+	LayerProps,
 	LineProps,
 	PathProps,
 	RectProps,
@@ -14,7 +16,17 @@ import type {
  *
  * Root 只存在于容器层；View/Rect/Text 对应 JSX intrinsic elements。
  */
-export type NodeType = 'Root' | 'View' | 'Rect' | 'Circle' | 'Path' | 'Line' | 'Text' | 'Image'
+export type NodeType =
+	| 'Root'
+	| 'View'
+	| 'Group'
+	| 'Layer'
+	| 'Rect'
+	| 'Circle'
+	| 'Path'
+	| 'Line'
+	| 'Text'
+	| 'Image'
 
 /**
  * 布局结果：由 Yoga 计算得到的最终位置与尺寸（相对父节点坐标系）。
@@ -63,6 +75,10 @@ export type RootNode = BaseNode<'Root', Record<string, never>> & {
 export type ViewNode = BaseNode<'View', ViewProps> & {
 	backgroundImageInstance: HTMLImageElement | null
 }
+export type GroupNode = BaseNode<'Group', GroupProps>
+export type LayerNode = BaseNode<'Layer', LayerProps> & {
+	backgroundImageInstance: HTMLImageElement | null
+}
 export type RectNode = BaseNode<'Rect', RectProps>
 export type CircleNode = BaseNode<'Circle', CircleProps>
 export type PathNode = BaseNode<'Path', PathProps> & {
@@ -77,6 +93,8 @@ export type ImageNode = BaseNode<'Image', ImageProps> & {
 
 export type CanvasNode =
 	| ViewNode
+	| GroupNode
+	| LayerNode
 	| RectNode
 	| CircleNode
 	| PathNode

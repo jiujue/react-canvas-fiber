@@ -1,7 +1,9 @@
 import { createElement } from 'react'
 import type {
 	CircleProps,
+	GroupProps,
 	ImageProps,
+	LayerProps,
 	LineProps,
 	PathProps,
 	RectProps,
@@ -10,7 +12,9 @@ import type {
 } from '../types/jsx'
 export type {
 	CircleProps,
+	GroupProps,
 	ImageProps,
+	LayerProps,
 	LineProps,
 	PathProps,
 	RectProps,
@@ -33,6 +37,14 @@ export type {
  */
 export function View(props: ViewProps) {
 	return createElement('View', props)
+}
+
+export function Group(props: GroupProps) {
+	return createElement('Group', props)
+}
+
+export function Layer(props: LayerProps) {
+	return createElement('Layer', props)
 }
 
 export function Rect(props: RectProps) {

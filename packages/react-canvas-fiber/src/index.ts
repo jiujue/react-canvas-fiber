@@ -1,2 +1,2 @@
 export { Canvas } from './components'
-export { Circle, Line, Path, Rect, Text, View, Image } from './jsx'
+export { Circle, Group, Image, Layer, Line, Path, Rect, Text, View } from './jsx'

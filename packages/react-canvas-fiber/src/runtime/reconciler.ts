@@ -49,7 +49,7 @@ const hostConfig: any = {
 			if (!img.complete) {
 				img.onload = () => rootContainer.invalidate()
 			}
-		} else if (type === 'View' && props.backgroundImage) {
+		} else if ((type === 'View' || type === 'Layer') && props.backgroundImage) {
 			const viewNode = node as unknown as import('./nodes').ViewNode
 			const img = new Image()
 			img.crossOrigin = 'anonymous'
@@ -159,7 +159,7 @@ const hostConfig: any = {
 					}
 				}
 			}
-		} else if (instance.type === 'View') {
+		} else if (instance.type === 'View' || instance.type === 'Layer') {
 			const viewNode = instance as unknown as import('./nodes').ViewNode
 			const newBg = (instance.props as any).backgroundImage
 			const currentBg = viewNode.backgroundImageInstance?.dataset?.src

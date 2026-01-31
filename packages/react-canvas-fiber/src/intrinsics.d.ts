@@ -1,6 +1,8 @@
 import type {
 	CircleProps,
+	GroupProps,
 	ImageProps,
+	LayerProps,
 	LineProps,
 	PathProps,
 	RectProps,
@@ -14,6 +16,8 @@ declare global {
 	namespace JSX {
 		interface IntrinsicElements {
 			View: ViewProps
+			Group: GroupProps
+			Layer: LayerProps
 			Rect: RectProps
 			Circle: CircleProps
 			Path: PathProps

@@ -23,16 +23,25 @@ import { hitTestEllipse, hitTestLineSegment } from './hitTestPrimitives'
 function getOrderedChildrenByZIndex(node: CanvasNode): CanvasNode[] {
 	const children = node.children
 	if (children.length <= 1) return children
+	if (node.type === 'Layer') return children
 	let hasAnyZ = false
+	let hash = 2166136261
 	for (let i = 0; i < children.length; i += 1) {
 		const z = resolveZIndex((children[i].props as any)?.style?.zIndex)
 		if (z !== 0) {
 			hasAnyZ = true
-			break
 		}
+		hash ^= children[i].debugId
+		hash = Math.imul(hash, 16777619)
+		hash ^= z
+		hash = Math.imul(hash, 16777619)
 	}
 	if (!hasAnyZ) return children
-	return children
+	const cache = (node as any).__zOrderCache as
+		| { hash: number; len: number; ordered: CanvasNode[] }
+		| undefined
+	if (cache && cache.hash === hash && cache.len === children.length) return cache.ordered
+	const ordered = children
 		.map((child, index) => ({
 			child,
 			index,
@@ -40,9 +49,30 @@ function getOrderedChildrenByZIndex(node: CanvasNode): CanvasNode[] {
 		}))
 		.sort((a, b) => a.zIndex - b.zIndex || a.index - b.index)
 		.map((x) => x.child)
+	;(node as any).__zOrderCache = { hash, len: children.length, ordered }
+	return ordered
 }
 
-function computeLocalTransform(style: any, w: number, h: number) {
+function computeLocalTransform(node: CanvasNode, style: any, w: number, h: number) {
+	const cache = (node as any).__localTransformCache as
+		| {
+				transform: any
+				transformOrigin: any
+				w: number
+				h: number
+				value: { matrix: any; inv: any; scale: number }
+		  }
+		| undefined
+	if (
+		cache &&
+		cache.transform === style?.transform &&
+		cache.transformOrigin === style?.transformOrigin &&
+		cache.w === w &&
+		cache.h === h
+	) {
+		return cache.value
+	}
+
 	const transformMatrix = parseTransform(style?.transform)
 	const hasTransform =
 		transformMatrix.a !== IDENTITY_MATRIX.a ||
@@ -51,7 +81,17 @@ function computeLocalTransform(style: any, w: number, h: number) {
 		transformMatrix.d !== IDENTITY_MATRIX.d ||
 		transformMatrix.e !== IDENTITY_MATRIX.e ||
 		transformMatrix.f !== IDENTITY_MATRIX.f
-	if (!hasTransform) return { matrix: IDENTITY_MATRIX, inv: IDENTITY_MATRIX, scale: 1 }
+	if (!hasTransform) {
+		const value = { matrix: IDENTITY_MATRIX, inv: IDENTITY_MATRIX, scale: 1 }
+		;(node as any).__localTransformCache = {
+			transform: style?.transform,
+			transformOrigin: style?.transformOrigin,
+			w,
+			h,
+			value,
+		}
+		return value
+	}
 
 	const origin = resolveTransformOrigin(style?.transformOrigin, w, h)
 	const withOrigin = multiplyMatrix(
@@ -59,8 +99,17 @@ function computeLocalTransform(style: any, w: number, h: number) {
 		multiplyMatrix(transformMatrix, translationMatrix(-origin.x, -origin.y)),
 	)
 	const inv = invertMatrix(withOrigin)
-	if (!inv) return { matrix: withOrigin, inv: null, scale: estimateUniformScale(withOrigin) }
-	return { matrix: withOrigin, inv, scale: estimateUniformScale(withOrigin) }
+	const value = inv
+		? { matrix: withOrigin, inv, scale: estimateUniformScale(withOrigin) }
+		: { matrix: withOrigin, inv: null, scale: estimateUniformScale(withOrigin) }
+	;(node as any).__localTransformCache = {
+		transform: style?.transform,
+		transformOrigin: style?.transformOrigin,
+		w,
+		h,
+		value,
+	}
+	return value
 }
 
 function hitTestRoundedRect(x: number, y: number, w: number, h: number, r: number): boolean {
@@ -108,7 +157,7 @@ export function hitTestTree(
 		let localX = px - node.layout.x
 		let localY = py - node.layout.y
 
-		const t = computeLocalTransform(style, w, h)
+		const t = computeLocalTransform(node, style, w, h)
 		if (t.inv === null) return null
 		if (t.matrix !== IDENTITY_MATRIX) {
 			const p = applyToPoint(t.inv, localX, localY)
@@ -119,7 +168,7 @@ export function hitTestTree(
 		const inBox = localX >= 0 && localX <= w && localY >= 0 && localY <= h
 
 		const overflowHidden = resolveOverflowHidden(style.overflow)
-		const isView = node.type === 'View'
+		const isView = node.type === 'View' || node.type === 'Layer'
 		const scrollX = isView && !!(node.props as any)?.scrollX
 		const scrollY = isView && !!(node.props as any)?.scrollY
 		const clipped = scrollX || scrollY || overflowHidden
@@ -254,8 +303,10 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 			absLeft += n.layout.x
 			absTop += n.layout.y
 			const hasNext = i > 0
-			if (hasNext && n.type === 'View' && (n.props as any)?.scrollX) absLeft -= n.scrollLeft ?? 0
-			if (hasNext && n.type === 'View' && (n.props as any)?.scrollY) absTop -= n.scrollTop ?? 0
+			if (hasNext && (n.type === 'View' || n.type === 'Layer') && (n.props as any)?.scrollX)
+				absLeft -= n.scrollLeft ?? 0
+			if (hasNext && (n.type === 'View' || n.type === 'Layer') && (n.props as any)?.scrollY)
+				absTop -= n.scrollTop ?? 0
 		}
 
 		return { x: absLeft, y: absTop, width: node.layout.width, height: node.layout.height }
@@ -265,7 +316,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		const rects: { x: number; y: number; width: number; height: number }[] = []
 		let current: CanvasNode | null = node.parent && node.parent.type !== 'Root' ? node.parent : null
 		while (current) {
-			if (current.type === 'View') {
+			if (current.type === 'View' || current.type === 'Layer') {
 				const scrollX = !!(current.props as any)?.scrollX
 				const scrollY = !!(current.props as any)?.scrollY
 				if (scrollX || scrollY) rects.push(getAbsoluteRect(current))
@@ -469,7 +520,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		thumbY: number
 		thumbH: number
 	} | null => {
-		if (view.type !== 'View') return null
+		if (view.type !== 'View' && view.type !== 'Layer') return null
 		if (!(view.props as any)?.scrollY) return null
 		if ((view.props as any)?.scrollbarY === false) return null
 
@@ -518,7 +569,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		thumbX: number
 		thumbW: number
 	} | null => {
-		if (view.type !== 'View') return null
+		if (view.type !== 'View' && view.type !== 'Layer') return null
 		if (!(view.props as any)?.scrollX) return null
 		if ((view.props as any)?.scrollbarX === false) return null
 
@@ -596,9 +647,13 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		}
 
 		const childOffsetX =
-			node.type === 'View' && (node.props as any)?.scrollX ? left - (node.scrollLeft ?? 0) : left
+			(node.type === 'View' || node.type === 'Layer') && (node.props as any)?.scrollX
+				? left - (node.scrollLeft ?? 0)
+				: left
 		const childOffsetY =
-			node.type === 'View' && (node.props as any)?.scrollY ? top - (node.scrollTop ?? 0) : top
+			(node.type === 'View' || node.type === 'Layer') && (node.props as any)?.scrollY
+				? top - (node.scrollTop ?? 0)
+				: top
 
 		const children = getOrderedChildrenByZIndex(node)
 		for (let i = children.length - 1; i >= 0; i -= 1) {
@@ -651,7 +706,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
 
 	const applyScrollY = (node: CanvasNode, delta: number) => {
-		if (node.type !== 'View') return false
+		if (node.type !== 'View' && node.type !== 'Layer') return false
 		if (!(node.props as any)?.scrollY) return false
 		const contentHeight = node.scrollContentHeight ?? 0
 		const maxScrollTop = Math.max(0, contentHeight - node.layout.height)
@@ -667,7 +722,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	}
 
 	const applyScrollX = (node: CanvasNode, delta: number) => {
-		if (node.type !== 'View') return false
+		if (node.type !== 'View' && node.type !== 'Layer') return false
 		if (!(node.props as any)?.scrollX) return false
 		const contentWidth = node.scrollContentWidth ?? 0
 		const maxScrollLeft = Math.max(0, contentWidth - node.layout.width)
@@ -769,7 +824,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		const capturedForScroll = pointerCapture.get(pointerId)
 		if (
 			capturedForScroll &&
-			capturedForScroll.type === 'View' &&
+			(capturedForScroll.type === 'View' || capturedForScroll.type === 'Layer') &&
 			capturedForScroll.scrollbarDrag &&
 			capturedForScroll.scrollbarDrag.pointerId === pointerId
 		) {
@@ -784,9 +839,10 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 					absLeft += n.layout.x
 					absTop += n.layout.y
 					const hasNext = i > 0
-					if (hasNext && n.type === 'View' && (n.props as any)?.scrollX)
+					if (hasNext && (n.type === 'View' || n.type === 'Layer') && (n.props as any)?.scrollX)
 						absLeft -= n.scrollLeft ?? 0
-					if (hasNext && n.type === 'View' && (n.props as any)?.scrollY) absTop -= n.scrollTop ?? 0
+					if (hasNext && (n.type === 'View' || n.type === 'Layer') && (n.props as any)?.scrollY)
+						absTop -= n.scrollTop ?? 0
 				}
 
 				if (drag.axis === 'y') {
@@ -829,7 +885,10 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 
 		if (eventType === 'pointerdown') {
 			const scrollbarTarget = hitTestScrollbarThumb(init.x, init.y)
-			if (scrollbarTarget && scrollbarTarget.view.type === 'View') {
+			if (
+				scrollbarTarget &&
+				(scrollbarTarget.view.type === 'View' || scrollbarTarget.view.type === 'Layer')
+			) {
 				scrollbarTarget.view.scrollbarDrag = {
 					axis: scrollbarTarget.axis,
 					pointerId,

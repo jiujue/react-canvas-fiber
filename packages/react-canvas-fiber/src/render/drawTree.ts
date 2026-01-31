@@ -322,16 +322,25 @@ function drawNode(state: DrawState, node: CanvasNode) {
 	const getOrderedChildren = () => {
 		const children = node.children
 		if (children.length <= 1) return children
+		if (node.type === 'Layer') return children
 		let hasAnyZ = false
+		let hash = 2166136261
 		for (let i = 0; i < children.length; i += 1) {
 			const z = resolveZIndex((children[i].props as any)?.style?.zIndex)
 			if (z !== 0) {
 				hasAnyZ = true
-				break
 			}
+			hash ^= children[i].debugId
+			hash = Math.imul(hash, 16777619)
+			hash ^= z
+			hash = Math.imul(hash, 16777619)
 		}
 		if (!hasAnyZ) return children
-		return children
+		const cache = (node as any).__zOrderCache as
+			| { hash: number; len: number; ordered: CanvasNode[] }
+			| undefined
+		if (cache && cache.hash === hash && cache.len === children.length) return cache.ordered
+		const ordered = children
 			.map((child, index) => ({
 				child,
 				index,
@@ -339,6 +348,8 @@ function drawNode(state: DrawState, node: CanvasNode) {
 			}))
 			.sort((a, b) => a.zIndex - b.zIndex || a.index - b.index)
 			.map((x) => x.child)
+		;(node as any).__zOrderCache = { hash, len: children.length, ordered }
+		return ordered
 	}
 
 	ctx.save()
@@ -359,7 +370,28 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		ctx.translate(-origin.x, -origin.y)
 	}
 
-	if (node.type === 'View') {
+	if (node.type === 'Group') {
+		if (overflowHidden) {
+			ctx.save()
+			ctx.beginPath()
+			ctx.rect(0, 0, w, h)
+			ctx.clip()
+			for (const child of getOrderedChildren()) {
+				drawNode(state, child)
+			}
+			ctx.restore()
+			ctx.restore()
+			return
+		}
+
+		for (const child of getOrderedChildren()) {
+			drawNode(state, child)
+		}
+		ctx.restore()
+		return
+	}
+
+	if (node.type === 'View' || node.type === 'Layer') {
 		const background = (node.props as any).background
 		viewBorder = resolveBorder((node.props as any).border)
 		viewRadius = (node.props as any).borderRadius ?? 0
@@ -623,7 +655,7 @@ function drawNode(state: DrawState, node: CanvasNode) {
 		drawNode(state, child)
 	}
 
-	if (node.type === 'View' && !viewIsScroll && viewBorder) {
+	if ((node.type === 'View' || node.type === 'Layer') && !viewIsScroll && viewBorder) {
 		drawBorder(ctx, 0, 0, w, h, viewRadius, viewBorder)
 	}
 

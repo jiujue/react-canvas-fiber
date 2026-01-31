@@ -10,7 +10,7 @@ import {
 	Wrap,
 	loadYoga,
 } from 'yoga-layout/load'
-import type { CanvasNode, RootNode, TextNode, ViewNode } from '../runtime/nodes'
+import type { CanvasNode, RootNode, TextNode } from '../runtime/nodes'
 import { normalizeInsets } from '../utils'
 import type { LayoutEngine } from '../types'
 import type { CanvasRootOptions } from '../types'
@@ -209,7 +209,7 @@ function syncYogaTree(
 	clearLinks(root as any)
 	detachAll(rootYoga)
 
-	const visit = (parentYoga: any, parent: ViewNode | RootNode) => {
+	const visit = (parentYoga: any, parent: RootNode | CanvasNode) => {
 		for (let i = 0; i < parent.children.length; i += 1) {
 			const child = parent.children[i]
 			ensureYogaNode(engine, child, measureText, defaults)
@@ -290,7 +290,7 @@ export async function layoutTree(
 	}
 
 	const clampScrollTop = (node: CanvasNode) => {
-		if (node.type !== 'View') return
+		if (node.type !== 'View' && node.type !== 'Layer') return
 		if (!(node.props as any)?.scrollY) return
 		const viewportH = node.layout.height
 		const contentH = node.scrollContentHeight ?? 0
@@ -300,7 +300,7 @@ export async function layoutTree(
 	}
 
 	const clampScrollLeft = (node: CanvasNode) => {
-		if (node.type !== 'View') return
+		if (node.type !== 'View' && node.type !== 'Layer') return
 		if (!(node.props as any)?.scrollX) return
 		const viewportW = node.layout.width
 		const contentW = node.scrollContentWidth ?? 0
@@ -314,7 +314,7 @@ export async function layoutTree(
 			readComputedLayout(child)
 			if (child.children.length) walk(child)
 			if (
-				child.type === 'View' &&
+				(child.type === 'View' || child.type === 'Layer') &&
 				((child.props as any)?.scrollY || (child.props as any)?.scrollX)
 			) {
 				if ((child.props as any)?.scrollY) {
