@@ -6,6 +6,7 @@ import TreeSelectDemo from './demos/TreeSelectDemo'
 import ScrollCullingDemo from './demos/ScrollCullingDemo'
 import BackgroundDemo from './demos/BackgroundDemo'
 import ProfilingDemo from './demos/ProfilingDemo'
+import OffscreenWorkerDemo from './demos/OffscreenWorkerDemo'
 
 type DemoRoute = {
 	key: string
@@ -50,6 +51,13 @@ const demoRoutes: DemoRoute[] = [
 		label: 'Profiling',
 		description: '开启 profiling 的性能采样示例',
 		element: <ProfilingDemo />,
+	},
+	{
+		key: 'worker',
+		path: 'worker',
+		label: 'Worker',
+		description: 'OffscreenCanvas Worker 绘制示例（自动回退）',
+		element: <OffscreenWorkerDemo />,
 	},
 	{
 		key: 'tree',

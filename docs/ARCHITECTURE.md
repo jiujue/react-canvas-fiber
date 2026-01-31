@@ -68,6 +68,49 @@ graph TB
   - 递归遍历子树，使用父节点偏移做坐标累加
   - 用 `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)` 支持高清渲染
 
+### Draw Backend（主线程 / Worker 双后端）
+
+draw pass 有两种后端：
+
+- **主线程 Canvas2D**：直接调用 `drawTree(rootNode, ctx, ...)`。
+- **OffscreenCanvas Worker**：主线程只做“序列化 + postMessage”，Worker 中用 `OffscreenCanvasRenderingContext2D` 执行绘制。
+
+相关文件：
+
+- 主线程创建与通信：`packages/react-canvas-fiber/src/worker/offscreenRenderer.ts`
+- 场景序列化：`packages/react-canvas-fiber/src/worker/serializeScene.ts`
+- 消息协议：`packages/react-canvas-fiber/src/worker/protocol.ts`
+- Worker 绘制实现：`packages/react-canvas-fiber/src/worker/offscreenCanvas.worker.ts`
+
+Worker 的收益边界：
+
+- **收益**：把“Canvas2D 绘制 + 图片解码/缓存 + Path2D 解析”等重活搬到 Worker，减少主线程长任务。
+- **不变**：React commit 仍在主线程；Yoga layout 仍在主线程（目前设计如此）。
+
+#### Worker 消息与时序（简化）
+
+```mermaid
+sequenceDiagram
+  participant Main as Main Thread (Root)
+  participant W as Worker (OffscreenCanvas)
+
+  Main->>W: init(canvas, width, height, dpr, debug)
+  W-->>Main: ready
+
+  loop 每帧（dirty）
+    Main->>Main: layoutTree(root, w, h)
+    Main->>Main: serializeSceneForWorker(root, options, frameIndex, overlay, debug)
+    Main->>W: render(scene)
+    W->>W: drawScene(scene)
+    W-->>Main: frameDone(frameIndex, drawMs, fps, resources)
+  end
+```
+
+#### 自动回退与限制
+
+- 自动回退：当环境不支持 `Worker` 或 `transferControlToOffscreen` 时，仍走主线程 `Canvas2D drawTree`。
+- 限制：`transferControlToOffscreen()` 一旦把 DOM canvas 控制权交给 Worker，通常无法再切回主线程 `getContext('2d')`。因此建议创建 root 时就确定是否启用 Worker。
+
 ## 运行时 Root（把三段串起来）
 
 - `packages/react-canvas-fiber/src/runtime/root.ts`
@@ -150,6 +193,10 @@ export function App() {
 
 - `root.ts` 会在浏览器里注册到 `window.__REACT_CANVAS_FIBER_DEVTOOLS__`，提供 snapshot、node props、命中测试等能力
 - 若 `<Canvas profiling />` 开启 profiling，会记录每帧 `layoutMs/drawMs/overlayMs` 与 Canvas API 调用计数，便于定位瓶颈
+
+在 Worker 模式下，root 还会额外暴露 Worker 状态（用于排查“是否启用 / 是否回退 / 最新帧耗时 / Worker log”等）：
+
+- `__devtools.getWorkerState()`
 
 ## 扩展点（后续常见需求）
 

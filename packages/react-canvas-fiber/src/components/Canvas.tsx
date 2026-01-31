@@ -12,6 +12,7 @@ import type { CanvasProps } from '../types'
 export function Canvas(props: CanvasProps) {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const rootRef = useRef<ReturnType<typeof createCanvasRoot> | null>(null)
+	const workerInitRef = useRef(props.worker)
 
 	const dpr = props.dpr ?? 1
 
@@ -147,6 +148,7 @@ export function Canvas(props: CanvasProps) {
 			fontWeight: props.fontWeight,
 			lineHeight: props.lineHeight,
 			profiling: props.profiling,
+			worker: workerInitRef.current,
 		})
 
 		return () => {
@@ -164,6 +166,14 @@ export function Canvas(props: CanvasProps) {
 		props.profiling,
 		dpr,
 	])
+
+	useLayoutEffect(() => {
+		const root = rootRef.current as any
+		if (!root) return
+		const worker = props.worker
+		const debug = typeof worker === 'object' && worker ? ((worker as any).debug ?? null) : null
+		root.setWorkerDebug?.(debug)
+	}, [props.worker])
 
 	/**
 	 * children 变更时，推送到 reconciler 触发一次 commit。

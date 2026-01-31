@@ -6,6 +6,9 @@ import { createReconcilerRoot } from './reconciler'
 import type { CanvasNode, RootNode } from './nodes'
 import type { CanvasPointerEventType, CanvasRootOptions, MeasureTextFn } from '../types'
 import { createCanvasProfiler } from './profiler'
+import { createOffscreenWorkerRenderer } from '../worker/offscreenRenderer'
+import { serializeSceneForWorker } from '../worker/serializeScene'
+import type { WorkerOverlay } from '../worker/protocol'
 import {
 	IDENTITY_MATRIX,
 	applyToPoint,
@@ -246,8 +249,61 @@ export function hitTestTree(
  * 注意：这里用 requestAnimationFrame 合帧，避免一次提交触发多次绘制。
  */
 export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootOptions) {
-	const ctx = canvas.getContext('2d')
-	if (!ctx) throw new Error('CanvasRenderingContext2D is not available')
+	const measureCanvas =
+		typeof document !== 'undefined' && typeof document.createElement === 'function'
+			? document.createElement('canvas')
+			: null
+	const measureCtx = measureCanvas?.getContext('2d') ?? null
+	if (!measureCtx) throw new Error('CanvasRenderingContext2D is not available')
+
+	const workerConfig = options.worker
+	const wantWorker = !!workerConfig
+
+	const workerLogs: Array<{
+		level: 'debug' | 'info' | 'warn' | 'error'
+		message: string
+		ts: number
+	}> = []
+	const maxWorkerLogs = 200
+	let lastWorkerFrame: null | {
+		frameIndex: number
+		drawMs: number
+		overlayMs: number
+		totalMs: number
+		fps: number
+		memory?: { usedJSHeapSize?: number; totalJSHeapSize?: number; jsHeapSizeLimit?: number } | null
+		resources?: { bitmaps: number; bitmapBytes: number } | null
+	} = null
+
+	let workerDebug =
+		typeof workerConfig === 'object' && workerConfig ? ((workerConfig as any).debug ?? null) : null
+
+	let workerFrameIndex = 0
+	let workerError: string | null = null
+
+	let workerRenderer: ReturnType<typeof createOffscreenWorkerRenderer> | null = null
+	if (wantWorker) {
+		const r = createOffscreenWorkerRenderer(canvas, options, workerDebug, {
+			onLog(entry) {
+				workerLogs.push(entry)
+				if (workerLogs.length > maxWorkerLogs)
+					workerLogs.splice(0, workerLogs.length - maxWorkerLogs)
+			},
+			onFrameDone(frame) {
+				lastWorkerFrame = frame
+			},
+			onError(err) {
+				workerError = err?.message ?? String(err)
+			},
+		})
+		if (r.isSupported) workerRenderer = r
+	}
+
+	let ctx: CanvasRenderingContext2D | null = null
+	if (!workerRenderer) {
+		ctx = canvas.getContext('2d')
+		if (!ctx) throw new Error('CanvasRenderingContext2D is not available')
+	}
 
 	const profiling = options.profiling
 	const profiler = profiling
@@ -381,6 +437,8 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		disposed = true
 		if (frameId != null) cancelAnimationFrame(frameId)
 		frameId = null
+		workerRenderer?.dispose()
+		workerRenderer = null
 	}
 
 	/**
@@ -388,15 +446,37 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	 * 这里直接复用当前 CanvasRenderingContext2D 的 measureText，做最小可用实现。
 	 */
 	const measureText: MeasureTextFn = (text: string, font: string, maxWidth?: number) => {
-		ctx.save()
-		ctx.font = font
-		const metrics = ctx.measureText(text)
-		ctx.restore()
+		measureCtx.save()
+		measureCtx.font = font
+		const metrics = measureCtx.measureText(text)
+		measureCtx.restore()
 		const width = typeof maxWidth === 'number' ? Math.min(metrics.width, maxWidth) : metrics.width
 		const height = Math.ceil(
 			metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent || 0,
 		)
 		return { width, height: Math.max(1, height) }
+	}
+
+	const buildWorkerOverlay = (
+		hover: CanvasNode | null,
+		selected: CanvasNode | null,
+	): WorkerOverlay | null => {
+		if (!hover && !selected) return null
+		const encode = (node: CanvasNode) => {
+			const r = getAbsoluteRect(node)
+			const clipRects = getScrollClipRects(node)
+			return {
+				x: r.x,
+				y: r.y,
+				width: r.width,
+				height: r.height,
+				clipRects: clipRects.length ? clipRects : undefined,
+			}
+		}
+		const overlay: WorkerOverlay = {}
+		if (hover && (!selected || hover.debugId !== selected.debugId)) overlay.hover = encode(hover)
+		if (selected) overlay.selected = encode(selected)
+		return overlay
 	}
 
 	/**
@@ -451,16 +531,33 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 
 				if (disposed) return
 
+				const overlayHover = typeof hoverId === 'number' ? findNodeById(hoverId) : null
+				const overlaySelected = typeof selectedId === 'number' ? findNodeById(selectedId) : null
+
 				if (needsDraw) {
 					profiler?.count('pass.draw')
-					if (profiler) {
-						profiler.timeSync('drawMs', () => {
-							drawTree(rootNode, ctx, options.dpr, options.clearColor, options, {
-								count: profiler.count,
-							})
-						})
+					if (workerRenderer) {
+						const overlay = buildWorkerOverlay(overlayHover, overlaySelected)
+						const scene = serializeSceneForWorker(
+							rootNode,
+							options,
+							(workerFrameIndex += 1),
+							overlay,
+							workerDebug,
+						)
+						await workerRenderer.render(scene)
 					} else {
-						drawTree(rootNode, ctx, options.dpr, options.clearColor, options)
+						const c = ctx
+						if (!c) throw new Error('CanvasRenderingContext2D is not available')
+						if (profiler) {
+							profiler.timeSync('drawMs', () => {
+								drawTree(rootNode, c, options.dpr, options.clearColor, options, {
+									count: profiler.count,
+								})
+							})
+						} else {
+							drawTree(rootNode, c, options.dpr, options.clearColor, options)
+						}
 					}
 				}
 
@@ -485,86 +582,90 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 				return
 			}
 
-			const overlayHover = typeof hoverId === 'number' ? findNodeById(hoverId) : null
-			const overlaySelected = typeof selectedId === 'number' ? findNodeById(selectedId) : null
-			if (overlayHover || overlaySelected) {
-				profiler?.count('pass.overlay')
-				const perf = profiler ? { count: profiler.count } : null
-				const drawOverlay = () => {
-					perf?.count('ctx.save')
-					ctx.save()
-					perf?.count('ctx.setTransform')
-					ctx.setTransform(options.dpr, 0, 0, options.dpr, 0, 0)
-
-					if (
-						overlayHover &&
-						(!overlaySelected || overlayHover.debugId !== overlaySelected.debugId)
-					) {
-						const r = getAbsoluteRect(overlayHover)
-						perf?.count('ctx.save')
-						ctx.save()
-						for (const clip of getScrollClipRects(overlayHover)) {
-							perf?.count('ctx.beginPath')
-							ctx.beginPath()
-							perf?.count('ctx.rect')
-							ctx.rect(clip.x, clip.y, clip.width, clip.height)
-							perf?.count('ctx.clip')
-							ctx.clip()
-						}
-						perf?.count('ctx.fillStyle.set')
-						ctx.fillStyle = 'rgba(59,130,246,0.12)'
-						perf?.count('ctx.strokeStyle.set')
-						ctx.strokeStyle = 'rgba(59,130,246,0.9)'
-						perf?.count('ctx.lineWidth.set')
-						ctx.lineWidth = 1
-						perf?.count('ctx.fillRect')
-						ctx.fillRect(r.x, r.y, r.width, r.height)
-						perf?.count('ctx.strokeRect')
-						ctx.strokeRect(
-							r.x + 0.5,
-							r.y + 0.5,
-							Math.max(0, r.width - 1),
-							Math.max(0, r.height - 1),
-						)
-						perf?.count('ctx.restore')
-						ctx.restore()
-					}
-
-					if (overlaySelected) {
-						const r = getAbsoluteRect(overlaySelected)
-						perf?.count('ctx.save')
-						ctx.save()
-						for (const clip of getScrollClipRects(overlaySelected)) {
-							perf?.count('ctx.beginPath')
-							ctx.beginPath()
-							perf?.count('ctx.rect')
-							ctx.rect(clip.x, clip.y, clip.width, clip.height)
-							perf?.count('ctx.clip')
-							ctx.clip()
-						}
-						perf?.count('ctx.fillStyle.set')
-						ctx.fillStyle = 'rgba(16,185,129,0.12)'
-						perf?.count('ctx.strokeStyle.set')
-						ctx.strokeStyle = 'rgba(16,185,129,0.95)'
-						perf?.count('ctx.lineWidth.set')
-						ctx.lineWidth = 2
-						perf?.count('ctx.fillRect')
-						ctx.fillRect(r.x, r.y, r.width, r.height)
-						perf?.count('ctx.strokeRect')
-						ctx.strokeRect(r.x + 1, r.y + 1, Math.max(0, r.width - 2), Math.max(0, r.height - 2))
-						perf?.count('ctx.restore')
-						ctx.restore()
-					}
-
-					perf?.count('ctx.restore')
-					ctx.restore()
-				}
-
-				if (profiler) profiler.timeSync('overlayMs', drawOverlay)
-				else drawOverlay()
-			}
-
 			if (disposed) return
+
+			if (!workerRenderer) {
+				const overlayHover = typeof hoverId === 'number' ? findNodeById(hoverId) : null
+				const overlaySelected = typeof selectedId === 'number' ? findNodeById(selectedId) : null
+				if (overlayHover || overlaySelected) {
+					profiler?.count('pass.overlay')
+					const perf = profiler ? { count: profiler.count } : null
+					const drawOverlay = () => {
+						const c = ctx
+						if (!c) return
+						perf?.count('ctx.save')
+						c.save()
+						perf?.count('ctx.setTransform')
+						c.setTransform(options.dpr, 0, 0, options.dpr, 0, 0)
+
+						if (
+							overlayHover &&
+							(!overlaySelected || overlayHover.debugId !== overlaySelected.debugId)
+						) {
+							const r = getAbsoluteRect(overlayHover)
+							perf?.count('ctx.save')
+							c.save()
+							for (const clip of getScrollClipRects(overlayHover)) {
+								perf?.count('ctx.beginPath')
+								c.beginPath()
+								perf?.count('ctx.rect')
+								c.rect(clip.x, clip.y, clip.width, clip.height)
+								perf?.count('ctx.clip')
+								c.clip()
+							}
+							perf?.count('ctx.fillStyle.set')
+							c.fillStyle = 'rgba(59,130,246,0.12)'
+							perf?.count('ctx.strokeStyle.set')
+							c.strokeStyle = 'rgba(59,130,246,0.9)'
+							perf?.count('ctx.lineWidth.set')
+							c.lineWidth = 1
+							perf?.count('ctx.fillRect')
+							c.fillRect(r.x, r.y, r.width, r.height)
+							perf?.count('ctx.strokeRect')
+							c.strokeRect(
+								r.x + 0.5,
+								r.y + 0.5,
+								Math.max(0, r.width - 1),
+								Math.max(0, r.height - 1),
+							)
+							perf?.count('ctx.restore')
+							c.restore()
+						}
+
+						if (overlaySelected) {
+							const r = getAbsoluteRect(overlaySelected)
+							perf?.count('ctx.save')
+							c.save()
+							for (const clip of getScrollClipRects(overlaySelected)) {
+								perf?.count('ctx.beginPath')
+								c.beginPath()
+								perf?.count('ctx.rect')
+								c.rect(clip.x, clip.y, clip.width, clip.height)
+								perf?.count('ctx.clip')
+								c.clip()
+							}
+							perf?.count('ctx.fillStyle.set')
+							c.fillStyle = 'rgba(16,185,129,0.12)'
+							perf?.count('ctx.strokeStyle.set')
+							c.strokeStyle = 'rgba(16,185,129,0.95)'
+							perf?.count('ctx.lineWidth.set')
+							c.lineWidth = 2
+							perf?.count('ctx.fillRect')
+							c.fillRect(r.x, r.y, r.width, r.height)
+							perf?.count('ctx.strokeRect')
+							c.strokeRect(r.x + 1, r.y + 1, Math.max(0, r.width - 2), Math.max(0, r.height - 2))
+							perf?.count('ctx.restore')
+							c.restore()
+						}
+
+						perf?.count('ctx.restore')
+						c.restore()
+					}
+
+					if (profiler) profiler.timeSync('overlayMs', drawOverlay)
+					else drawOverlay()
+				}
+			}
 
 			if (profiler && profiler.shouldSampleSceneThisFrame()) {
 				const nodesByType: Record<string, number> = Object.create(null)
@@ -584,25 +685,31 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 					nodesByType[n.type] = (nodesByType[n.type] ?? 0) + 1
 					if (n.type === 'Image') {
 						imagesTotal += 1
-						addImage((n as any).imageInstance)
+						if (!workerRenderer) addImage((n as any).imageInstance)
 					}
 					if (n.type === 'View' || n.type === 'Layer') {
-						const bg = (n as any).backgroundImageInstance
-						if (bg) {
-							imagesTotal += 1
-							addImage(bg)
+						if (workerRenderer) {
+							if ((n.props as any)?.backgroundImage) imagesTotal += 1
+						} else {
+							const bg = (n as any).backgroundImageInstance
+							if (bg) {
+								imagesTotal += 1
+								addImage(bg)
+							}
 						}
 					}
 					for (const c of n.children) walk(c)
 				}
 				for (const c of rootNode.children) walk(c)
 
+				const pxW = Math.floor(options.width * options.dpr)
+				const pxH = Math.floor(options.height * options.dpr)
 				profiler.setSceneSnapshot({
 					nodesTotal,
 					nodesByType,
 					imagesTotal,
 					decodedImageBytes,
-					canvasBytes: ctx.canvas.width * ctx.canvas.height * 4,
+					canvasBytes: (workerRenderer ? pxW * pxH : ctx!.canvas.width * ctx!.canvas.height) * 4,
 				})
 			}
 		} finally {
@@ -628,6 +735,12 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		dirtyDraw = true
 		if (containerRef) containerRef.__rcfNeedsDraw = true
 		scheduleFrame()
+	}
+
+	const setWorkerDebug = (next: any) => {
+		workerDebug = next ?? null
+		workerRenderer?.setDebug(workerDebug)
+		invalidateDrawOnly()
 	}
 
 	const getScrollbarMetricsY = (
@@ -1177,6 +1290,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 	const container = { root: rootNode, invalidate, notifyCommit, invalidateDrawOnly }
 	;(container as any).__rcfNeedsLayout = true
 	;(container as any).__rcfNeedsDraw = true
+	;(container as any).__rcfUseWorker = !!workerRenderer
 	containerRef = container
 	rootNode.container = container
 	const reconcilerRoot = createReconcilerRoot(container as any)
@@ -1260,6 +1374,15 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		},
 		resetPerformance() {
 			profiler?.reset()
+		},
+		getWorkerState() {
+			return {
+				requested: wantWorker,
+				active: !!workerRenderer,
+				error: workerError,
+				lastFrame: lastWorkerFrame,
+				logs: workerLogs.slice(),
+			}
 		},
 	}
 
@@ -1431,6 +1554,7 @@ export function createCanvasRoot(canvas: HTMLCanvasElement, options: CanvasRootO
 		},
 		dispatchPointerEvent,
 		dispatchWheelEvent,
+		setWorkerDebug,
 		__devtools,
 	}
 }

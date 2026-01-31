@@ -31,5 +31,5 @@ export type {
 	ImageProps,
 	YogaStyle,
 } from './jsx'
-export type { CanvasContainer, CanvasRootOptions, MeasureTextFn } from './runtime'
+export type { CanvasContainer, CanvasRootOptions, CanvasWorkerDebugOptions, MeasureTextFn } from './runtime'
 export type { DrawState } from './render'

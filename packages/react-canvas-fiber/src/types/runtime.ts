@@ -26,6 +26,14 @@ export type CanvasRootOptions = {
 	fontWeight?: number | string
 	lineHeight?: number
 	profiling?: boolean | { maxFrames?: number; sceneSampleEveryNFrames?: number }
+	worker?: boolean | { debug?: CanvasWorkerDebugOptions | null }
+}
+
+export type CanvasWorkerDebugOptions = {
+	logEnabled?: boolean
+	visualize?: {
+		nodeBounds?: boolean
+	}
 }
 
 /**

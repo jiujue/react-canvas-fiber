@@ -37,7 +37,8 @@ const hostConfig: any = {
 
 	createInstance(type: string, props: any, rootContainer: CanvasContainer) {
 		const node = createNode(type as any, props)
-		if (type === 'Image' && props.src) {
+		const useWorker = !!(rootContainer as any).__rcfUseWorker
+		if (!useWorker && type === 'Image' && props.src) {
 			const imgNode = node as ImageNode
 			const img = new Image()
 			img.crossOrigin = 'anonymous'
@@ -49,7 +50,7 @@ const hostConfig: any = {
 			if (!img.complete) {
 				img.onload = () => rootContainer.invalidate()
 			}
-		} else if ((type === 'View' || type === 'Layer') && props.backgroundImage) {
+		} else if (!useWorker && (type === 'View' || type === 'Layer') && props.backgroundImage) {
 			const viewNode = node as unknown as import('./nodes').ViewNode
 			const img = new Image()
 			img.crossOrigin = 'anonymous'

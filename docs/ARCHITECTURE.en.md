@@ -68,6 +68,49 @@ Layout flow:
   - Recursively traverses the subtree, accumulating coordinates with parent offsets
   - Uses `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)` for high-DPI rendering
 
+### Draw Backends (Main Thread / Worker)
+
+The draw pass supports two backends:
+
+- **Main-thread Canvas2D**: call `drawTree(rootNode, ctx, ...)` directly.
+- **OffscreenCanvas Worker**: the main thread serializes the scene and posts it to a Worker; the Worker draws using `OffscreenCanvasRenderingContext2D`.
+
+Relevant files:
+
+- Main thread wiring: `packages/react-canvas-fiber/src/worker/offscreenRenderer.ts`
+- Scene serialization: `packages/react-canvas-fiber/src/worker/serializeScene.ts`
+- Message protocol: `packages/react-canvas-fiber/src/worker/protocol.ts`
+- Worker renderer: `packages/react-canvas-fiber/src/worker/offscreenCanvas.worker.ts`
+
+Worker scope:
+
+- **Moved off main thread**: Canvas2D drawing, bitmap loading/caching, Path2D caching/parsing, etc.
+- **Still on main thread**: React commits and Yoga layout (by design currently).
+
+#### Worker Messaging (Simplified)
+
+```mermaid
+sequenceDiagram
+  participant Main as Main Thread (Root)
+  participant W as Worker (OffscreenCanvas)
+
+  Main->>W: init(canvas, width, height, dpr, debug)
+  W-->>Main: ready
+
+  loop each dirty frame
+    Main->>Main: layoutTree(root, w, h)
+    Main->>Main: serializeSceneForWorker(...)
+    Main->>W: render(scene)
+    W->>W: drawScene(scene)
+    W-->>Main: frameDone(frameIndex, drawMs, fps, resources)
+  end
+```
+
+#### Fallback & Limitation
+
+- Fallback: if `Worker` or `transferControlToOffscreen` is unavailable, it uses the main-thread backend.
+- Limitation: after `transferControlToOffscreen()`, you typically can’t switch back to main-thread `getContext('2d')`. Decide the backend when creating the root.
+
 ## Runtime Root (Wiring Everything Together)
 
 - `packages/react-canvas-fiber/src/runtime/root.ts`

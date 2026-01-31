@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import type { CanvasWorkerDebugOptions } from './runtime'
 
 /**
  * <Canvas/> 桥接组件 props。
@@ -17,6 +18,7 @@ export type CanvasProps = {
 	fontWeight?: number | string
 	lineHeight?: number
 	profiling?: boolean | { maxFrames?: number; sceneSampleEveryNFrames?: number }
+	worker?: boolean | { debug?: CanvasWorkerDebugOptions | null }
 	style?: CSSProperties
 	children?: ReactNode
 }
